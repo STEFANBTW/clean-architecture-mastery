@@ -1,0 +1,877 @@
+{
+  "chapter": 1,
+  "part": "PART I · Introduction",
+  "title": "What Is Design and Architecture?",
+  "subtitle": "The continuous fabric of decisions, the 40x cost signature of a mess, and why going well is the only way to go fast.",
+  "description": "30 deep-drilling interactive questions covering the unity of design and architecture, the economic goal of software structure, the Release 1–8 corporate case study, Aesop's Hare vs. Tortoise, and Jason Gorman's TDD speed experiment.",
+  "released_on": "2026-11-26",
+  "question_count": 30,
+  "questions": [
+    {
+      "id": "ch1-q01",
+      "type": "mcq_single",
+      "bloom": "Conceptual Distinction",
+      "prompt": "How does Robert C. Martin resolve the long-standing industry distinction between 'software architecture' and 'software design'?",
+      "instruction": "Select the single best answer.",
+      "options": [
+        {
+          "text": "There is no difference between them at all; high-level structure and low-level details form a single continuous fabric of decisions.",
+          "explanation": "Correct! Martin asserts there is zero difference between architecture and design—just like a home's blueprints include both exterior elevations and the exact wiring of every light switch and sump pump."
+        },
+        {
+          "text": "Architecture defines the deployment and service boundaries, while design only begins inside individual classes and functions.",
+          "explanation": "Incorrect. Martin explicitly calls the separation of high-level structure from low-level code details 'nonsensical' because low-level decisions directly support and enable high-level structure."
+        },
+        {
+          "text": "Architecture consists of irreversible upfront decisions, whereas design consists of reversible daily refactoring decisions.",
+          "explanation": "Incorrect. While other authors use that heuristic, in Chapter 1 Martin explicitly rejects any dividing line between architecture and design, defining them as an unbroken continuum."
+        },
+        {
+          "text": "Design applies to user experience and API ergonomics, whereas architecture applies strictly to performance and scalability.",
+          "explanation": "Incorrect. Software architecture and design in this book refer to the internal structure of the software system from the highest component boundary down to the lowest lines of code."
+        }
+      ],
+      "correct_index": 0,
+      "overall_explanation": "Architecture and design are identical: low-level details and high-level decisions are inseparable parts of a single whole."
+    },
+    {
+      "id": "ch1-q02",
+      "type": "cloze_bank",
+      "bloom": "Core Definition",
+      "prompt": "Complete Robert C. Martin's foundational definition of the goal of software architecture:",
+      "instruction": "Click a blank slot and choose the matching term from the word bank below.",
+      "template": "The goal of software architecture is to {{1}} the {{2}} required to {{3}} and {{4}} the required system.",
+      "blanks": [
+        {
+          "answer": "minimize"
+        },
+        {
+          "answer": "human resources"
+        },
+        {
+          "answer": "build"
+        },
+        {
+          "answer": "maintain"
+        }
+      ],
+      "word_bank": [
+        "minimize",
+        "maximize",
+        "human resources",
+        "cloud compute",
+        "build",
+        "maintain",
+        "automate",
+        "document"
+      ],
+      "overall_explanation": "Architecture is measured economically by human effort: minimizing the human resources required to build and maintain the system across its lifetime."
+    },
+    {
+      "id": "ch1-q03",
+      "type": "mcq_single",
+      "bloom": "Quantitative Evaluation",
+      "prompt": "According to Chapter 1, what is the single objective measure of software design quality?",
+      "instruction": "Select the single best answer.",
+      "options": [
+        {
+          "text": "The level of effort required to meet the needs of the customer across successive releases.",
+          "explanation": "Correct! If the effort stays low throughout the system's lifetime, the design is good; if the effort grows with each new release, the design is bad."
+        },
+        {
+          "text": "The percentage of classes that adhere to formal UML architectural diagrams and design patterns.",
+          "explanation": "Incorrect. Diagrams and patterns are tools, not the measure of quality. A pattern-heavy codebase that takes 10x more effort per release has a bad design."
+        },
+        {
+          "text": "The runtime throughput, memory footprint, and benchmark speed of the production executable.",
+          "explanation": "Incorrect. Machine efficiency is separate from architectural quality; a blazing-fast program that costs $20M a month to add a minor feature has a terrible architecture."
+        },
+        {
+          "text": "The total number of lines of code produced per developer per month.",
+          "explanation": "Incorrect. Lines of code alone can be inflated by duplication; the true measure is how little effort is required to satisfy customer needs over time."
+        }
+      ],
+      "correct_index": 0,
+      "overall_explanation": "Design quality is strictly inversely proportional to the ongoing human effort needed to fulfill customer requirements."
+    },
+    {
+      "id": "ch1-q04",
+      "type": "match_pairs",
+      "bloom": "Empirical Case Study Analysis",
+      "prompt": "Match each empirical chart from the Chapter 1 anonymous corporate case study (Releases 1 through 8) to what its curve actually revealed:",
+      "instruction": "Click an item on the left, then click its corresponding empirical trend on the right.",
+      "pairs": [
+        {
+          "left": "Figure 1.1: Engineering Staff Growth",
+          "right": "Surged exponentially from a small team to a huge headcount, creating a false impression of runaway success"
+        },
+        {
+          "left": "Figure 1.2: Total Lines of Code Over Time",
+          "right": "Flattened toward a horizontal asymptote despite more developers being thrown at every release"
+        },
+        {
+          "left": "Figure 1.3: Cost per Line of Code",
+          "right": "Exploded roughly 40x higher in Release 8 compared to Release 1"
+        },
+        {
+          "left": "Figure 1.4: Developer Productivity per Release",
+          "right": "Started near 100% in Release 1 and decayed asymptotically toward 0% by Release 4+"
+        },
+        {
+          "left": "Figure 1.5: Monthly Development Payroll",
+          "right": "Climbed from a few hundred thousand dollars in Release 1 to $20 million/month by Release 8 for almost zero new output"
+        }
+      ],
+      "right_order": [
+        2,
+        0,
+        4,
+        1,
+        3
+      ],
+      "overall_explanation": "Together, Figures 1.1–1.5 reveal the 'Signature of a Mess': skyrocketing headcount and $20M monthly payroll yielding near-zero new functionality."
+    },
+    {
+      "id": "ch1-q05",
+      "type": "cloze_typed",
+      "bloom": "Empirical Recall",
+      "prompt": "Fill in the exact quantitative figures from the Chapter 1 corporate case study:",
+      "instruction": "Type the number or phrase in each blank.",
+      "template": "In the Chapter 1 case study, producing a line of code in Release 8 was {{1}} times more expensive than in Release 1, and by Release 8 the monthly development payroll had reached ${{2}} million.",
+      "blanks": [
+        {
+          "answer": "40",
+          "accepted": [
+            "40",
+            "forty",
+            "40x"
+          ],
+          "placeholder": "multiplier"
+        },
+        {
+          "answer": "20",
+          "accepted": [
+            "20",
+            "twenty",
+            "20m"
+          ],
+          "placeholder": "millions"
+        }
+      ],
+      "overall_explanation": "By Release 8, cost per line of code had multiplied 40x and monthly development payroll hit $20 million while code growth plateaued."
+    },
+    {
+      "id": "ch1-q06",
+      "type": "order_steps",
+      "bloom": "Causal Mechanism Tracing",
+      "prompt": "Arrange the causal chain that produces 'The Signature of a Mess' in exact chronological order:",
+      "instruction": "Drag rows or use the ↑ / ↓ buttons to order the steps from initial shortcut (1) to financial stall (5).",
+      "items": [
+        "Developers rush code to market with little thought for cleanliness, believing 'we can clean it up later'.",
+        "Market success attracts a horde of competitors, forcing the team to run even faster on the next feature instead of switching modes to clean up.",
+        "The accumulating mess diverts developer effort away from building features toward merely shifting the mess from one place to another.",
+        "Executive leadership responds to slowing delivery by hiring dramatically more engineers, driving monthly payroll into the tens of millions.",
+        "Per-developer productivity approaches a zero asymptote and cost per line of code explodes 40x, draining profit and threatening business collapse."
+      ],
+      "initial_order": [
+        2,
+        0,
+        4,
+        1,
+        3
+      ],
+      "correct_order": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "overall_explanation": "Market pressure never abates after launch; the team never gets a 'later' to clean up, so effort shifts from feature delivery to mess management."
+    },
+    {
+      "id": "ch1-q07",
+      "type": "claim_audit",
+      "bloom": "Critical Fallacy Audit",
+      "prompt": "Audit this common engineering justification against the empirical findings in Chapter 1:",
+      "instruction": "Select the verdict and defend your reasoning in your own words.",
+      "claim": "Writing messy code helps us move faster in the short term to beat competitors to market; the only downside is that it slows us down in the long term.",
+      "verdict_options": [
+        "Architecturally Sound",
+        "Dangerous Fallacy",
+        "True Only for Prototypes Under 1 Week"
+      ],
+      "correct_verdict": "Dangerous Fallacy",
+      "key_concepts": [
+        "Making messes is always slower than staying clean on every time scale",
+        "Jason Gorman's 6-day Roman numerals TDD experiment (<30 minutes per iteration)",
+        "TDD days were ~10% faster and even the slowest TDD day beat the fastest non-TDD day"
+      ],
+      "model_answer": "Martin calls this the 'bigger lie'. It is an error of fact: making messes is always slower than staying clean on ANY time scale, even under 30 minutes. Jason Gorman's 6-day Roman numeral experiment proved that disciplined TDD iterations were ~10% faster than non-TDD iterations, and even the slowest TDD day was faster than the fastest non-TDD day.",
+      "overall_explanation": "Making messes does not even buy short-term speed; even on sub-30-minute tasks, cleanliness disciplines (like TDD) finish faster."
+    },
+    {
+      "id": "ch1-q08",
+      "type": "mcq_single",
+      "bloom": "Experimental Evidence Analysis",
+      "prompt": "What did Jason Gorman's 6-day Roman Numeral conversion experiment specifically demonstrate about cleanliness disciplines (TDD vs. non-TDD)?",
+      "instruction": "Select the single best answer.",
+      "options": [
+        {
+          "text": "Even on a task taking under 30 minutes, TDD days were ~10% faster on average, and the slowest TDD day was faster than the fastest non-TDD day.",
+          "explanation": "Correct! Even after accounting for the 6-day learning curve, TDD on days 1, 3, and 5 outperformed non-TDD on days 2, 4, and 6 across the board."
+        },
+        {
+          "text": "Non-TDD was faster on Day 1 and Day 2, but TDD overtook non-TDD by Day 5 once the codebase exceeded 5,000 lines.",
+          "explanation": "Incorrect. Each day was a fresh, independent sub-30-minute implementation of Roman numeral conversion, not a growing multi-day codebase—and TDD was faster right away."
+        },
+        {
+          "text": "TDD and non-TDD took the exact same completion time, but TDD produced 80% fewer production defects.",
+          "explanation": "Incorrect. In Gorman's experiment, completion was only recorded once all predefined acceptance tests passed, and TDD finished ~10% faster."
+        },
+        {
+          "text": "Developers without TDD wrote 40 times more lines of code to pass the same acceptance test suite.",
+          "explanation": "Incorrect. The 40x cost multiplier came from the 8-release corporate case study (Figure 1.3), not Jason Gorman's 6-day Roman numeral experiment."
+        }
+      ],
+      "correct_index": 0,
+      "overall_explanation": "Gorman's experiment falsifies the myth that 'dirty code is faster in the short term'—even on a 30-minute micro-task, clean discipline wins."
+    },
+    {
+      "id": "ch1-q09",
+      "type": "classify_buckets",
+      "bloom": "Psychological Diagnosis",
+      "prompt": "In Chapter 1's Aesop analogy, classify each behavior or belief into either 'The Overconfident Hare' or 'The Disciplined Tortoise':",
+      "instruction": "Click an item card, then click the bucket it belongs in.",
+      "buckets": [
+        "The Overconfident Hare",
+        "The Disciplined Tortoise"
+      ],
+      "items": [
+        {
+          "text": "'We can clean up the architecture later; we just have to ship to market first!'",
+          "bucket": "The Overconfident Hare"
+        },
+        {
+          "text": "'The only way to go fast, is to go well.'",
+          "bucket": "The Disciplined Tortoise"
+        },
+        {
+          "text": "'This codebase is unsalvageable—let's scrap it and redesign the whole system from scratch!'",
+          "bucket": "The Overconfident Hare"
+        },
+        {
+          "text": "Applying test-driven cleanliness discipline even on a 25-minute coding task.",
+          "bucket": "The Disciplined Tortoise"
+        },
+        {
+          "text": "Working heroic overtime while letting the part of the brain that cares about clean structure sleep.",
+          "bucket": "The Overconfident Hare"
+        },
+        {
+          "text": "Taking direct responsibility for reversing the mess inside the existing system rather than blaming legacy code.",
+          "bucket": "The Disciplined Tortoise"
+        }
+      ],
+      "overall_explanation": "Notice that demanding a 'greenfield rewrite from scratch' is ALSO the overconfident Hare talking—the same habits will drive the rewrite into the exact same mess."
+    },
+    {
+      "id": "ch1-q10",
+      "type": "spot_flaw",
+      "bloom": "JavaScript Code Smell Diagnosis",
+      "prose_mode": false,
+      "prompt": "This JavaScript checkout service exhibits the 'low-level mess that paralyzes high-level feature delivery' described in Chapter 1. Click the TWO lines where low-level infrastructure details (SQL & HTTP) are welded directly into business pricing rules:",
+      "instruction": "Click the 2 flawed lines in the snippet below, then click Check Answer.",
+      "lines": [
+        {
+          "text": "async function processOrder(cart, customerId) {",
+          "explanation": "Function signature is clean."
+        },
+        {
+          "text": "  const subtotal = cart.items.reduce((sum, i) => sum + i.price * i.qty, 0);",
+          "explanation": "Pure domain arithmetic—no coupling flaw here."
+        },
+        {
+          "text": "  const row = await global.pgPool.query(`SELECT tier FROM users WHERE id = '${customerId}'`);",
+          "explanation": "FLAW 1: Direct global PostgreSQL query and raw string interpolation embedded straight inside the order policy."
+        },
+        {
+          "text": "  const discount = row.rows[0]?.tier === 'VIP' ? subtotal * 0.15 : 0;",
+          "explanation": "Domain discount rule itself is fine once tier data is provided via an abstraction."
+        },
+        {
+          "text": "  await fetch('https://api.stripe.com/v1/charges', { method: 'POST', body: String(subtotal - discount) });",
+          "explanation": "FLAW 2: Hardcoded third-party payment HTTP call inside core calculation logic makes unit testing and modification expensive."
+        },
+        {
+          "text": "  return { total: subtotal - discount };",
+          "explanation": "Return statement is clean."
+        },
+        {
+          "text": "}",
+          "explanation": "Closing brace."
+        }
+      ],
+      "flawed_indices": [
+        2,
+        4
+      ],
+      "overall_explanation": "Low-level details and high-level structure form one fabric. Welding raw SQL and direct Stripe HTTP calls into core pricing logic forces every future change to untangle infrastructure from policy."
+    },
+    {
+      "id": "ch1-q11",
+      "type": "mcq_multi",
+      "bloom": "Multi-Factor Diagnosis",
+      "prompt": "Why does the promise 'We'll clean up the code after we ship v1 to market' almost always fail in the real world? (Select ALL that apply)",
+      "instruction": "Select all correct options, then click Check Answer.",
+      "options": [
+        {
+          "text": "Market pressures never abate; beating competitors to market just puts a horde of competitors on your tail demanding the next feature immediately.",
+          "explanation": "Correct! Once you launch, competitive pressure intensifies rather than disappearing."
+        },
+        {
+          "text": "Developers never actually switch modes because there is always another urgent feature queued after the current one.",
+          "explanation": "Correct! Without a continuous discipline of cleanliness, the team stays locked in 'feature rush' mode forever."
+        },
+        {
+          "text": "The creeping mess of code never sleeps or relents, actively compounding the friction of every subsequent change.",
+          "explanation": "Correct! Existing coupling multiplies the effort required for each new addition, eroding capacity to refactor."
+        },
+        {
+          "text": "Compilers and JavaScript engines automatically degrade the execution speed of older files after 6 months.",
+          "explanation": "Incorrect. The slowdown is in human developer productivity caused by tangled design structure, not V8 runtime aging."
+        }
+      ],
+      "correct_indices": [
+        0,
+        1,
+        2
+      ],
+      "overall_explanation": "Market pressure is permanent, mode-switching is a myth, and structural rot compounds on every release."
+    },
+    {
+      "id": "ch1-q12",
+      "type": "free_response",
+      "bloom": "Feynman Synthesis",
+      "prompt": "Using Robert C. Martin's 'Home Architect' analogy from Chapter 1, explain in your own words why separating 'high-level software architecture' from 'low-level code design' is a false dichotomy.",
+      "instruction": "Write 3–5 sentences in your own words. Click Check Answer for AI evaluation.",
+      "placeholder": "Compare a house architect's blueprints (elevations + outlets/switches/sump pump) to software...",
+      "key_concepts": [
+        "A real home architect produces both high-level shapes/elevations and immense low-level details (outlets, light switches, furnace, sump pump)",
+        "Low-level details support high-level decisions and form a single continuous fabric",
+        "No clear dividing line separates architecture from design; there is a continuum of decisions from highest to lowest"
+      ],
+      "model_answer": "When a real architect designs a home, they don't just draw the exterior shape and room layout; their blueprints also specify every outlet, which switch controls which light, and where the furnace and sump pump sit. Those low-level details directly support the high-level decisions and are part of one unified whole. Similarly, in software, high-level structure and low-level code details form a single continuous fabric with no dividing line—just a continuum of decisions.",
+      "overall_explanation": "High-level decisions and low-level code details form a continuous fabric; corrupting the low-level details eventually collapses the high-level structure."
+    },
+    {
+      "id": "ch1-q13",
+      "type": "js_code",
+      "bloom": "Algorithmic Modeling in JavaScript",
+      "prompt": "Implement `analyzeReleaseHealth(releases)` in JavaScript to detect Chapter 1's 'Signature of a Mess' from engineering release telemetry.",
+      "instruction": "Given an array of release objects `{ release, staff, totalKloc, payroll }`, return `{ costPerKlocMultiplier, marginalOutputRatio, isSignatureOfMess }` where:\n- `costPerKlocMultiplier`: `(lastMarginalCostPerKloc / firstMarginalCostPerKloc)` rounded to 1 decimal place (marginal KLOC for release 0 is `releases[0].totalKloc`; for release `i` is `releases[i].totalKloc - releases[i-1].totalKloc`; marginal cost per KLOC is `payroll / marginalKloc`).\n- `marginalOutputRatio`: `Number((lastMarginalKloc / firstMarginalKloc).toFixed(2))`\n- `isSignatureOfMess`: `true` if `costPerKlocMultiplier >= 10` and `marginalOutputRatio <= 0.25`, else `false`.",
+      "starter_code": "function analyzeReleaseHealth(releases) {\n  const first = releases[0];\n  const prev = releases[releases.length - 2];\n  const last = releases[releases.length - 1];\n\n  // Compute marginal KLOC and cost per KLOC for first vs. last release\n  \n}",
+      "test_cases": [
+        {
+          "label": "Chapter 1 Case Study (Release 1 vs Release 8: 40x cost explosion)",
+          "call": "analyzeReleaseHealth([{ release: 1, staff: 10, totalKloc: 50, payroll: 500000 }, { release: 7, staff: 180, totalKloc: 190, payroll: 16000000 }, { release: 8, staff: 200, totalKloc: 200, payroll: 20000000 }])",
+          "expected": {
+            "costPerKlocMultiplier": 200,
+            "marginalOutputRatio": 0.2,
+            "isSignatureOfMess": true
+          }
+        },
+        {
+          "label": "Clean Architecture Team (Steady linear output and stable cost)",
+          "call": "analyzeReleaseHealth([{ release: 1, staff: 12, totalKloc: 40, payroll: 400000 }, { release: 2, staff: 12, totalKloc: 80, payroll: 400000 }, { release: 3, staff: 12, totalKloc: 120, payroll: 440000 }])",
+          "expected": {
+            "costPerKlocMultiplier": 1.1,
+            "marginalOutputRatio": 1,
+            "isSignatureOfMess": false
+          }
+        }
+      ],
+      "model_answer": "function analyzeReleaseHealth(releases) {\n  const first = releases[0];\n  const prev = releases[releases.length - 2];\n  const last = releases[releases.length - 1];\n  const firstMarginalKloc = first.totalKloc;\n  const lastMarginalKloc = last.totalKloc - prev.totalKloc;\n  const firstCostPerKloc = first.payroll / firstMarginalKloc;\n  const lastCostPerKloc = last.payroll / lastMarginalKloc;\n  const costPerKlocMultiplier = Number((lastCostPerKloc / firstCostPerKloc).toFixed(1));\n  const marginalOutputRatio = Number((lastMarginalKloc / firstMarginalKloc).toFixed(2));\n  return {\n    costPerKlocMultiplier,\n    marginalOutputRatio,\n    isSignatureOfMess: costPerKlocMultiplier >= 10 && marginalOutputRatio <= 0.25\n  };\n}",
+      "overall_explanation": "When marginal KLOC shrinks while payroll balloons, the marginal cost per line of code explodes—the unmistakable quantitative signature of architectural decay."
+    },
+    {
+      "id": "ch1-q14",
+      "type": "mcq_single",
+      "bloom": "Failure Mode Prediction",
+      "prompt": "Why does Robert C. Martin warn against scrapping a messy legacy system and redesigning it from scratch?",
+      "instruction": "Select the single best answer.",
+      "options": [
+        {
+          "text": "The demand for a full rewrite is driven by the same Hare-like overconfidence that created the original mess, and will lead the new project into the exact same mess.",
+          "explanation": "Correct! Without changing the underlying engineering habits and overconfidence, the team simply repeats the race and recreates the mess."
+        },
+        {
+          "text": "Modern cloud compilers can automatically refactor legacy code faster than humans can rewrite it.",
+          "explanation": "Incorrect. No tool automatically fixes architectural tangles; humans must adopt clean architecture discipline."
+        },
+        {
+          "text": "Rewriting from scratch is legally prohibited by most enterprise SLA contracts.",
+          "explanation": "Incorrect. Martin's argument is behavioral and architectural, not legal."
+        },
+        {
+          "text": "A rewrite is always recommended once cost per line of code exceeds 5x Release 1.",
+          "explanation": "Incorrect. Martin explicitly states that in every case, the best option is for the organization to recognize its overconfidence and take architecture seriously rather than falling for the rewrite mirage."
+        }
+      ],
+      "correct_index": 0,
+      "overall_explanation": "Believing 'we'll build it right if we just start over from scratch' is the Hare talking again."
+    },
+    {
+      "id": "ch1-q15",
+      "type": "spot_flaw",
+      "bloom": "Executive Diagnosis",
+      "prose_mode": true,
+      "prompt": "A VP of Engineering writes a 5-point post-mortem on why their Release 8 velocity collapsed. Click the ONE statement that contradicts Chapter 1's analysis:",
+      "instruction": "Click the flawed statement below, then click Check Answer.",
+      "lines": [
+        {
+          "text": "1. Our monthly engineering payroll grew from a few hundred thousand dollars in Release 1 to $20M in Release 8, while new code output plateaued.",
+          "explanation": "Accurately reflects Figures 1.2 and 1.5."
+        },
+        {
+          "text": "2. The root cause of the Release 8 collapse is that our developers became lazy, stopped working overtime, and reduced their personal effort after Release 3.",
+          "explanation": "FLAW: Chapter 1 explicitly notes that developers are working their butts off with heroics, dedication, and overtime—their effort hasn't dropped, it's just consumed by moving the mess around."
+        },
+        {
+          "text": "3. Our developers fell for the overconfident belief that they could rush messy code out first and switch modes to clean it up later.",
+          "explanation": "Accurately captures the Aesop Hare analogy in Chapter 1."
+        },
+        {
+          "text": "4. Almost all engineering capacity is now spent shifting the existing mess from one place to the next just to squeeze in one meager feature.",
+          "explanation": "Accurately reflects the developer frustration described on Figure 1.4."
+        }
+      ],
+      "flawed_indices": [
+        1
+      ],
+      "overall_explanation": "Developers in a decaying architecture are rarely lazy—they work exhausting hours, but their energy is swallowed by managing the mess."
+    },
+    {
+      "id": "ch1-q16",
+      "type": "mcq_single",
+      "bloom": "Scenario Application",
+      "prompt": "A startup CTO tells the team: 'We only have 3 weeks to ship MVP. Skip unit tests and clean boundaries for now—messy code is faster over a 3-week sprint, and we will refactor in Month 2.' How does Chapter 1 refute this?",
+      "instruction": "Select the single best answer.",
+      "options": [
+        {
+          "text": "Even within a 30-minute window (let alone 3 weeks), skipping cleanliness disciplines slows you down; making messes is slower than staying clean on every time scale.",
+          "explanation": "Correct! Jason Gorman's experiment showed cleanliness discipline wins even under 30 minutes, so over 3 weeks a messy codebase is already dragging velocity down."
+        },
+        {
+          "text": "The CTO is right about Month 1 being faster, provided the team freezes all feature work for 30 days in Month 2.",
+          "explanation": "Incorrect. Martin calls the idea that messy code is faster in the short term 'a simple error of fact', and notes market pressures will never allow a Month 2 feature freeze."
+        },
+        {
+          "text": "Clean architecture only begins to pay off after Release 4 when headcount exceeds 50 engineers.",
+          "explanation": "Incorrect. By Release 4 in Figure 1.4, productivity had already collapsed toward zero because of the mess made in Releases 1–3."
+        },
+        {
+          "text": "Skipping boundaries is fine in JavaScript because dynamic typing prevents structural coupling.",
+          "explanation": "Incorrect. Dynamic languages suffer from tangled dependencies and mess just as severely as statically typed languages."
+        }
+      ],
+      "correct_index": 0,
+      "overall_explanation": "There is no short-term speed boost from writing messy code—not over 3 weeks, and not even over 30 minutes."
+    },
+    {
+      "id": "ch1-q17",
+      "type": "cloze_bank",
+      "bloom": "Conceptual Precision",
+      "prompt": "Complete the passage describing what happens to developer effort inside a decaying codebase:",
+      "instruction": "Click each blank and choose the right phrase from the word bank.",
+      "template": "Despite all their heroics, overtime, and dedication, developers aren't getting much done anymore because all their effort has been diverted away from {{1}} and is now consumed with {{2}}—moving it from one place to the next just to add one {{3}}.",
+      "blanks": [
+        {
+          "answer": "features"
+        },
+        {
+          "answer": "managing the mess"
+        },
+        {
+          "answer": "meager little feature"
+        }
+      ],
+      "word_bank": [
+        "features",
+        "managing the mess",
+        "meager little feature",
+        "compiler upgrades",
+        "cloud migrations",
+        "major architectural rewrite"
+      ],
+      "overall_explanation": "As architecture decays, developer effort is hijacked from feature creation into endlessly rearranging the mess."
+    },
+    {
+      "id": "ch1-q18",
+      "type": "free_response",
+      "bloom": "Executive Communication",
+      "prompt": "Imagine you are presenting Figures 1.2 (Lines of Code per Release) and 1.5 (Monthly Payroll per Release) to a CFO. Explain in your own words what the contrast between these two curves means for the business.",
+      "instruction": "Write 3–4 sentences in your own words. Click Check Answer for AI evaluation.",
+      "placeholder": "Compare what the initial few hundred thousand dollars bought versus what the final $20 million bought...",
+      "key_concepts": [
+        "Release 1 cost a few hundred thousand dollars/month and delivered substantial functionality",
+        "By Release 8, monthly payroll reached $20 million but delivered almost zero new code/functionality",
+        "The trend is unsustainable and will catastrophically drain profit and drive the company into a stall or collapse"
+      ],
+      "model_answer": "In Release 1, a monthly payroll of a few hundred thousand dollars bought a large surge of product functionality. By Release 8, monthly payroll had ballooned to $20 million per month, yet the lines-of-code curve flattened out, meaning $20 million bought almost nothing. No matter how profitable the business looks today, a 40x explosion in cost per line of code will catastrophically drain profits and stall or collapse the company.",
+      "overall_explanation": "Comparing Figure 1.2 and Figure 1.5 exposes the existential financial threat of bad software architecture."
+    },
+    {
+      "id": "ch1-q19",
+      "type": "js_code",
+      "bloom": "Experimental Data Verification in JavaScript",
+      "prompt": "Write a JavaScript function `verifyGormanExperiment(runs)` that analyzes Jason Gorman's 6-day Roman Numeral TDD experiment data.",
+      "instruction": "Given `runs` — an array of `{ day, usedTdd, minutes }` — return an object `{ avgTddMinutes, avgNonTddMinutes, percentFaster, slowestTddBeatFastestNonTdd }` where:\n- `avgTddMinutes`: average minutes for `usedTdd === true` rounded to 1 decimal place\n- `avgNonTddMinutes`: average minutes for `usedTdd === false` rounded to 1 decimal place\n- `percentFaster`: `Math.round(((avgNonTddMinutes - avgTddMinutes) / avgNonTddMinutes) * 100)`\n- `slowestTddBeatFastestNonTdd`: boolean (`max(tdd.minutes) < min(nonTdd.minutes)`)",
+      "starter_code": "function verifyGormanExperiment(runs) {\n  const tdd = runs.filter(r => r.usedTdd);\n  const nonTdd = runs.filter(r => !r.usedTdd);\n  // Compute averages, percentFaster, and slowestTddBeatFastestNonTdd\n  \n}",
+      "test_cases": [
+        {
+          "label": "Gorman 6-Day Roman Numeral Dataset (Days 1,3,5 TDD vs Days 2,4,6 non-TDD)",
+          "call": "verifyGormanExperiment([{ day: 1, usedTdd: true, minutes: 24.5 }, { day: 2, usedTdd: false, minutes: 28.0 }, { day: 3, usedTdd: true, minutes: 22.0 }, { day: 4, usedTdd: false, minutes: 25.5 }, { day: 5, usedTdd: true, minutes: 19.5 }, { day: 6, usedTdd: false, minutes: 25.1 }])",
+          "expected": {
+            "avgTddMinutes": 22,
+            "avgNonTddMinutes": 26.2,
+            "percentFaster": 16,
+            "slowestTddBeatFastestNonTdd": true
+          }
+        },
+        {
+          "label": "Mixed Dataset where slowest TDD does not beat fastest non-TDD",
+          "call": "verifyGormanExperiment([{ day: 1, usedTdd: true, minutes: 26 }, { day: 2, usedTdd: false, minutes: 28 }, { day: 3, usedTdd: true, minutes: 20 }, { day: 4, usedTdd: false, minutes: 24 }])",
+          "expected": {
+            "avgTddMinutes": 23,
+            "avgNonTddMinutes": 26,
+            "percentFaster": 12,
+            "slowestTddBeatFastestNonTdd": false
+          }
+        }
+      ],
+      "model_answer": "function verifyGormanExperiment(runs) {\n  const tdd = runs.filter(r => r.usedTdd).map(r => r.minutes);\n  const nonTdd = runs.filter(r => !r.usedTdd).map(r => r.minutes);\n  const avgTddMinutes = Number((tdd.reduce((a, b) => a + b, 0) / tdd.length).toFixed(1));\n  const avgNonTddMinutes = Number((nonTdd.reduce((a, b) => a + b, 0) / nonTdd.length).toFixed(1));\n  const percentFaster = Math.round(((avgNonTddMinutes - avgTddMinutes) / avgNonTddMinutes) * 100);\n  const slowestTddBeatFastestNonTdd = Math.max(...tdd) < Math.min(...nonTdd);\n  return { avgTddMinutes, avgNonTddMinutes, percentFaster, slowestTddBeatFastestNonTdd };\n}",
+      "overall_explanation": "Gorman's dataset showed not only an average speed advantage for TDD, but also that the single slowest TDD run still beat the single fastest non-TDD run."
+    },
+    {
+      "id": "ch1-q20",
+      "type": "mcq_single",
+      "bloom": "Analogical Reasoning",
+      "prompt": "In Chapter 1's discussion of Aesop's Tortoise and the Hare, how do modern developers differ from the literal Hare in the fable while still sharing its fatal flaw?",
+      "instruction": "Select the single best answer.",
+      "options": [
+        {
+          "text": "Modern developers do not physically nap—they work their butts off—but the part of their brain that knows clean, well-designed code matters goes to sleep.",
+          "explanation": "Correct! Developers work intensely hard physically, yet put their architectural judgment to sleep out of overconfidence in their raw coding speed."
+        },
+        {
+          "text": "Modern developers take long vacations after Release 1, allowing competitors to overtake them.",
+          "explanation": "Incorrect. Martin stresses that developers do NOT rest or slack off—they work overtime while their codebase degrades."
+        },
+        {
+          "text": "Modern developers write too many unit tests early on, which causes them to nap during deployment.",
+          "explanation": "Incorrect. The flaw is neglecting cleanliness and testing discipline, not over-investing in it."
+        },
+        {
+          "text": "Modern developers lack intrinsic coding speed and therefore cannot compete without hiring 10x more staff.",
+          "explanation": "Incorrect. Like the Hare, developers have plenty of intrinsic speed initially (near 100% productivity in Release 1), which breeds their overconfidence."
+        }
+      ],
+      "correct_index": 0,
+      "overall_explanation": "The developer's 'nap' is mental, not physical: putting architectural discipline to sleep while sprinting on raw feature code."
+    },
+    {
+      "id": "ch1-q21",
+      "type": "claim_audit",
+      "bloom": "Architectural Continuity Audit",
+      "prompt": "Audit this statement made by a Principal Systems Architect during a design review:",
+      "instruction": "Select the verdict and explain why in your own words.",
+      "claim": "As the software architect, my job ends once I draw the top-level service boxes and message queues; how developers organize functions, variables, and modules inside each service is mere low-level design and cannot affect the architecture.",
+      "verdict_options": [
+        "Architecturally Sound",
+        "Dangerous Fallacy",
+        "True in Microservice Architectures"
+      ],
+      "correct_verdict": "Dangerous Fallacy",
+      "key_concepts": [
+        "Low-level details and high-level structure are part of the same continuous fabric",
+        "You cannot have high-level architecture without supporting low-level details",
+        "A mess inside low-level code will still drive developer productivity toward zero and skyrocket release costs"
+      ],
+      "model_answer": "This is a dangerous fallacy. Chapter 1 establishes that high-level decisions and low-level details form a single continuous fabric with no dividing line. Just as a house blueprint fails if the low-level wiring, plumbing, and foundation details are botched, high-level service boxes cannot save a system whose internal low-level code turns into a productivity-destroying mess.",
+      "overall_explanation": "Low-level details support high-level decisions; there is no boundary where 'architecture' stops and 'mere design' begins."
+    },
+    {
+      "id": "ch1-q22",
+      "type": "order_steps",
+      "bloom": "Continuum Hierarchy",
+      "prompt": "Chapter 1 describes architecture/design as an unbroken continuum from highest-level system shape down to lowest-level details. Order these software decisions from HIGHEST level (1) to LOWEST level (4):",
+      "instruction": "Drag or use ↑ / ↓ arrows to sort from macro structure (1) to micro detail (4).",
+      "items": [
+        "Separating core business rules from external delivery mechanisms (Web UI, CLI) and persistence (SQL/NoSQL).",
+        "Defining component boundaries and dependency directions between the Ordering, Billing, and Inventory modules.",
+        "Designing the interface contract and polymorphic dispatch for a `PaymentGateway` abstraction inside the Billing module.",
+        "Choosing immutable local constants and pure helper expressions inside a single JavaScript `calculateLineTax()` function."
+      ],
+      "initial_order": [
+        2,
+        0,
+        3,
+        1
+      ],
+      "correct_order": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "overall_explanation": "From system-wide boundary separation down to a single JavaScript function's internal structure, every level is part of the same architectural continuum."
+    },
+    {
+      "id": "ch1-q23",
+      "type": "mcq_multi",
+      "bloom": "Symptom Recognition",
+      "prompt": "Which of the following metrics from the Chapter 1 case study increased between Release 1 and Release 8? (Select ALL that apply)",
+      "instruction": "Select all correct options, then click Check Answer.",
+      "options": [
+        {
+          "text": "Total number of engineering staff",
+          "explanation": "Correct! Figure 1.1 shows dramatic growth in the engineering staff across every release."
+        },
+        {
+          "text": "Cost per line of code",
+          "explanation": "Correct! Figure 1.3 shows cost per line of code grew 40x higher by Release 8."
+        },
+        {
+          "text": "Monthly development payroll",
+          "explanation": "Correct! Figure 1.5 shows monthly payroll climbed from a few hundred thousand dollars to $20 million."
+        },
+        {
+          "text": "Developer productivity per release",
+          "explanation": "Incorrect. Figure 1.4 shows developer productivity per release plummeted from near 100% toward 0%."
+        },
+        {
+          "text": "Net new lines of code added per dollar spent",
+          "explanation": "Incorrect. Net new lines of code per dollar collapsed by 97.5% (40x higher cost per line)."
+        }
+      ],
+      "correct_indices": [
+        0,
+        1,
+        2
+      ],
+      "overall_explanation": "Staff count, cost per line of code, and monthly payroll all soared—while productivity and marginal code output per dollar collapsed."
+    },
+    {
+      "id": "ch1-q24",
+      "type": "cloze_typed",
+      "bloom": "Aphorism Recall",
+      "prompt": "Complete Robert C. Martin's famous six-word aphorism from Chapter 1 that summarizes the lesson of the Tortoise, the Hare, and Jason Gorman's TDD experiment:",
+      "instruction": "Type the missing words.",
+      "template": "The only way to go {{1}}, is to go {{2}}.",
+      "blanks": [
+        {
+          "answer": "fast",
+          "accepted": [
+            "fast",
+            "quickly"
+          ],
+          "placeholder": "speed"
+        },
+        {
+          "answer": "well",
+          "accepted": [
+            "well",
+            "clean",
+            "right"
+          ],
+          "placeholder": "quality"
+        }
+      ],
+      "overall_explanation": "'The only way to go fast, is to go well.' Speed is a byproduct of architectural and code cleanliness, never a trade-off against it."
+    },
+    {
+      "id": "ch1-q25",
+      "type": "match_pairs",
+      "bloom": "Cross-Domain Analogy Mapping",
+      "prompt": "Map each element of Robert C. Martin's Home Architecture analogy to its corresponding software architecture counterpart:",
+      "instruction": "Click a home blueprint element on the left, then click its software counterpart on the right.",
+      "pairs": [
+        {
+          "left": "Outward elevations, overall house shape, and room layout",
+          "right": "High-level system topology, service boundaries, and major use-case workflows"
+        },
+        {
+          "left": "Exact placement of every outlet, light switch, furnace, and sump pump",
+          "right": "Low-level module wiring, function signatures, dependency injection, and error handlers"
+        },
+        {
+          "left": "How the low-level electrical and foundation details support the room layout",
+          "right": "How clean low-level code details enable and sustain high-level architectural boundaries"
+        },
+        {
+          "left": "The complete set of blueprints produced by a single home architect",
+          "right": "The continuous fabric of software design and architecture with no dividing line between them"
+        }
+      ],
+      "right_order": [
+        2,
+        0,
+        3,
+        1
+      ],
+      "overall_explanation": "In both physical buildings and software systems, high-level layout and low-level wiring are inseparable parts of one design."
+    },
+    {
+      "id": "ch1-q26",
+      "type": "mcq_single",
+      "bloom": "Graphical Interpretation",
+      "prompt": "In Jason Gorman's 6-day experiment chart (Figure 1.6), why were Days 5 and 6 faster than Days 1 and 2, and how did that affect the TDD vs. non-TDD conclusion?",
+      "instruction": "Select the single best answer.",
+      "options": [
+        {
+          "text": "There was a natural learning curve across the six iterations, yet even with Day 6 benefiting from maximum practice, every TDD day (1, 3, 5) still beat every non-TDD day (2, 4, 6).",
+          "explanation": "Correct! Even Day 1 (TDD, least practice) beat Day 6 (non-TDD, most practice), proving that cleanliness discipline outweighed even the 6-day repetition advantage."
+        },
+        {
+          "text": "Gorman upgraded his hardware and IDE between Day 2 and Day 5, invalidating the comparison.",
+          "explanation": "Incorrect. The speedup across iterations was the human learning curve of repeating the Roman numeral kata."
+        },
+        {
+          "text": "Days 5 and 6 reused copy-pasted code from Day 1 instead of starting fresh.",
+          "explanation": "Incorrect. Each day he completed the program from scratch until the predefined acceptance tests passed."
+        },
+        {
+          "text": "The learning curve showed that by Day 6, non-TDD became faster than TDD once the problem was memorized.",
+          "explanation": "Incorrect. Even on Day 6, non-TDD was slower than the slowest TDD day (Day 1)."
+        }
+      ],
+      "correct_index": 0,
+      "overall_explanation": "Because slowest-TDD (Day 1) beat fastest-non-TDD (Day 6), the cleanliness discipline advantage was stronger than 6 days of problem familiarity."
+    },
+    {
+      "id": "ch1-q27",
+      "type": "classify_buckets",
+      "bloom": "Architectural Quality Triage",
+      "prompt": "Triage each engineering scenario into 'Good Design (Effort Stays Low)' or 'Bad Design (Effort Grows per Release)' according to Chapter 1's definition:",
+      "instruction": "Click an item card, then click the appropriate architectural bucket.",
+      "buckets": [
+        "Good Design (Effort Stays Low)",
+        "Bad Design (Effort Grows per Release)"
+      ],
+      "items": [
+        {
+          "text": "Adding a new payment method in Release 8 takes the same 2 developer-days it took in Release 1.",
+          "bucket": "Good Design (Effort Stays Low)"
+        },
+        {
+          "text": "Each new release requires modifying 35 unrelated files and running a 2-week manual regression cycle.",
+          "bucket": "Bad Design (Effort Grows per Release)"
+        },
+        {
+          "text": "Doubling the engineering headcount increases feature throughput by only 3%.",
+          "bucket": "Bad Design (Effort Grows per Release)"
+        },
+        {
+          "text": "Developers spend 85% of their sprint building customer-facing capabilities and 15% continuously keeping boundaries clean.",
+          "bucket": "Good Design (Effort Stays Low)"
+        }
+      ],
+      "overall_explanation": "Martin's criterion is simple: if the effort to meet customer needs stays low across the system's lifetime, the design is good; if it grows with each release, the design is bad."
+    },
+    {
+      "id": "ch1-q28",
+      "type": "spot_flaw",
+      "bloom": "Refactoring for Testability in JavaScript",
+      "prose_mode": false,
+      "prompt": "In Jason Gorman's Roman Numeral experiment, acceptance tests drove clean modular code. Click the ONE line in this JavaScript `toRoman(num)` implementation where a hidden global state mutation causes it to fail on the second test run:",
+      "instruction": "Click the flawed line of JavaScript code, then click Check Answer.",
+      "lines": [
+        {
+          "text": "const NUMERALS = [['X', 10], ['IX', 9], ['V', 5], ['IV', 4], ['I', 1]];",
+          "explanation": "Lookup table constant is clean."
+        },
+        {
+          "text": "let cachedOutput = '';",
+          "explanation": "FLAW: Module-level mutable accumulator is never reset between calls, causing every subsequent call to append onto previous results!"
+        },
+        {
+          "text": "function toRoman(remaining) {",
+          "explanation": "Function declaration is fine."
+        },
+        {
+          "text": "  for (const [symbol, value] of NUMERALS) {",
+          "explanation": "Iterating through numeral pairs is clean."
+        },
+        {
+          "text": "    while (remaining >= value) { cachedOutput += symbol; remaining -= value; }",
+          "explanation": "Greedy subtraction loop works if output is a local variable."
+        },
+        {
+          "text": "  }",
+          "explanation": "End of loop."
+        },
+        {
+          "text": "  return cachedOutput;",
+          "explanation": "Returns the corrupted module-global string."
+        },
+        {
+          "text": "}",
+          "explanation": "End of function."
+        }
+      ],
+      "flawed_indices": [
+        1
+      ],
+      "overall_explanation": "Shared mutable state across calls (`let cachedOutput = ''` outside `toRoman`) is a classic low-level defect that TDD immediately catches on the second assertion."
+    },
+    {
+      "id": "ch1-q29",
+      "type": "js_code",
+      "bloom": "Clean JavaScript Design Lab",
+      "prompt": "Decouple a messy JavaScript order calculator so that adding a new release requirement takes minimal effort (Chapter 1's measure of good design).",
+      "instruction": "Implement `createOrderPricer(taxPolicyFn, discountPolicyFn)` which returns a pure function `priceOrder(items)`. Each item in `items` has `{ price, qty }`. The returned function must:\n1. Compute `subtotal` = sum of `price * qty`\n2. Compute `discount` = `discountPolicyFn(subtotal, items)`\n3. Compute `taxable` = `Math.max(0, subtotal - discount)`\n4. Compute `tax` = `taxPolicyFn(taxable, items)`\n5. Return `{ subtotal, discount, tax, total: Number((taxable + tax).toFixed(2)) }`.",
+      "starter_code": "function createOrderPricer(taxPolicyFn, discountPolicyFn) {\n  return function priceOrder(items) {\n    // Implement clean, decoupled calculation\n    \n  };\n}",
+      "test_cases": [
+        {
+          "label": "Standard 10% tax and $15 flat discount",
+          "call": "createOrderPricer(t => t * 0.1, s => s >= 100 ? 15 : 0)([{ price: 50, qty: 2 }, { price: 20, qty: 1 }])",
+          "expected": {
+            "subtotal": 120,
+            "discount": 15,
+            "tax": 10.5,
+            "total": 115.5
+          }
+        },
+        {
+          "label": "Discount exceeding subtotal clamps taxable to 0",
+          "call": "createOrderPricer(t => t * 0.2, () => 50)([{ price: 15, qty: 2 }])",
+          "expected": {
+            "subtotal": 30,
+            "discount": 50,
+            "tax": 0,
+            "total": 0
+          }
+        }
+      ],
+      "model_answer": "function createOrderPricer(taxPolicyFn, discountPolicyFn) {\n  return function priceOrder(items) {\n    const subtotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);\n    const discount = discountPolicyFn(subtotal, items);\n    const taxable = Math.max(0, subtotal - discount);\n    const tax = taxPolicyFn(taxable, items);\n    return {\n      subtotal,\n      discount,\n      tax,\n      total: Number((taxable + tax).toFixed(2))\n    };\n  };\n}",
+      "overall_explanation": "By injecting tax and discount policies rather than hardcoding them, new release requirements can swap policies with near-zero effort."
+    },
+    {
+      "id": "ch1-q30",
+      "type": "free_response",
+      "bloom": "Personal Synthesis & Action Plan",
+      "prompt": "Synthesize Chapter 1's core thesis: What are the TWO lies developers tell themselves when under deadline pressure, and what is the only sustainable way to reverse declining productivity?",
+      "instruction": "Write 4–6 sentences in your own words. Click Check Answer for AI evaluation.",
+      "placeholder": "1. The first lie ('we can clean it up later')...\n2. The bigger lie ('messy code is faster in the short term')...\n3. How to reverse it...",
+      "key_concepts": [
+        "Lie 1: 'We can clean it up later; we just have to get to market first' (market pressure never abates, so cleanup never happens)",
+        "Lie 2 (The Bigger Lie): 'Writing messy code makes us go fast in the short term and only slows us down long term' (making messes is always slower on every time scale)",
+        "Bonus Lie: 'We should scrap the system and rewrite from scratch' (Hare's overconfidence repeats the mess)",
+        "Resolution: Stop thinking like the overconfident Hare, take responsibility for the mess, and invest continuously in clean software architecture ('The only way to go fast, is to go well')"
+      ],
+      "model_answer": "The first lie developers buy into is 'We can clean it up later once we get to market,' which fails because market pressure and competitor chases never stop, so the team never switches modes. The second, bigger lie is that 'writing messy code makes us faster in the short term,' which Jason Gorman's TDD experiment disproved by showing that making messes is slower even on a sub-30-minute task. Even the urge to rewrite from scratch is the same Hare-like overconfidence. The only way to reverse declining productivity is to abandon overconfidence, take responsibility for the existing mess, and treat clean architecture as the prerequisite for speed.",
+      "overall_explanation": "Mastering Chapter 1 means recognizing that architectural cleanliness is never a tax on speed—it is the sole engine of speed."
+    }
+  ]
+}

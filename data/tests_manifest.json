@@ -1,0 +1,27 @@
+{
+  "book_title": "Clean Architecture: A Craftsman's Guide to Software Structure and Design",
+  "author": "Robert C. Martin",
+  "total_book_chapters": 34,
+  "last_generated_chapter": 2,
+  "updated_at": "2026-11-26T07:00:00+01:00",
+  "available_tests": [
+    {
+      "chapter": 1,
+      "part": "PART I · Introduction",
+      "title": "What Is Design and Architecture?",
+      "subtitle": "The continuous fabric of decisions, the 40x cost signature of a mess, and why going well is the only way to go fast.",
+      "file": "data/tests/chapter-01.json",
+      "question_count": 30,
+      "released_on": "2026-11-26"
+    },
+    {
+      "chapter": 2,
+      "part": "PART I · Introduction",
+      "title": "A Tale of Two Values",
+      "subtitle": "Behavior vs. Architecture, proof by extremes, Scope vs. Shape, Eisenhower's Matrix, and fighting for architecture.",
+      "file": "data/tests/chapter-02.json",
+      "question_count": 30,
+      "released_on": "2026-11-26"
+    }
+  ]
+}

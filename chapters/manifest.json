@@ -1,0 +1,347 @@
+{
+  "book_title": "Clean Architecture: A Craftsman's Guide to Software Structure and Design",
+  "author": "Robert C. Martin",
+  "total_chapters": 34,
+  "chapters": [
+    {
+      "chapter": 1,
+      "part": "PART I Introduction",
+      "title": "What Is Design and Architecture?",
+      "slug": "chapter-01-what-is-design-and-architecture",
+      "file": "chapters/chapter-01.md",
+      "start_page": 27,
+      "end_page": 35,
+      "word_count": 1875
+    },
+    {
+      "chapter": 2,
+      "part": "PART I Introduction",
+      "title": "A Tale of Two Values",
+      "slug": "chapter-02-a-tale-of-two-values",
+      "file": "chapters/chapter-02.md",
+      "start_page": 36,
+      "end_page": 40,
+      "word_count": 1333
+    },
+    {
+      "chapter": 3,
+      "part": "PART II Starting with the Bricks: Programming Paradigms",
+      "title": "Paradigm Overview",
+      "slug": "chapter-03-paradigm-overview",
+      "file": "chapters/chapter-03.md",
+      "start_page": 43,
+      "end_page": 45,
+      "word_count": 591
+    },
+    {
+      "chapter": 4,
+      "part": "PART II Starting with the Bricks: Programming Paradigms",
+      "title": "Structured Programming",
+      "slug": "chapter-04-structured-programming",
+      "file": "chapters/chapter-04.md",
+      "start_page": 46,
+      "end_page": 51,
+      "word_count": 1787
+    },
+    {
+      "chapter": 5,
+      "part": "PART II Starting with the Bricks: Programming Paradigms",
+      "title": "Object-Oriented Programming",
+      "slug": "chapter-05-object-oriented-programming",
+      "file": "chapters/chapter-05.md",
+      "start_page": 52,
+      "end_page": 64,
+      "word_count": 2918
+    },
+    {
+      "chapter": 6,
+      "part": "PART II Starting with the Bricks: Programming Paradigms",
+      "title": "Functional Programming",
+      "slug": "chapter-06-functional-programming",
+      "file": "chapters/chapter-06.md",
+      "start_page": 65,
+      "end_page": 71,
+      "word_count": 1702
+    },
+    {
+      "chapter": 7,
+      "part": "PART III Design Principles",
+      "title": "SRP: The Single Responsibility Principle",
+      "slug": "chapter-07-srp-the-single-responsibility-principle",
+      "file": "chapters/chapter-07.md",
+      "start_page": 75,
+      "end_page": 81,
+      "word_count": 1282
+    },
+    {
+      "chapter": 8,
+      "part": "PART III Design Principles",
+      "title": "OCP: The Open-Closed Principle",
+      "slug": "chapter-08-ocp-the-open-closed-principle",
+      "file": "chapters/chapter-08.md",
+      "start_page": 82,
+      "end_page": 88,
+      "word_count": 1152
+    },
+    {
+      "chapter": 9,
+      "part": "PART III Design Principles",
+      "title": "LSP: The Liskov Substitution Principle",
+      "slug": "chapter-09-lsp-the-liskov-substitution-principle",
+      "file": "chapters/chapter-09.md",
+      "start_page": 89,
+      "end_page": 94,
+      "word_count": 1034
+    },
+    {
+      "chapter": 10,
+      "part": "PART III Design Principles",
+      "title": "ISP: The Interface Segregation Principle",
+      "slug": "chapter-10-isp-the-interface-segregation-principle",
+      "file": "chapters/chapter-10.md",
+      "start_page": 95,
+      "end_page": 98,
+      "word_count": 557
+    },
+    {
+      "chapter": 11,
+      "part": "PART III Design Principles",
+      "title": "DIP: The Dependency Inversion Principle",
+      "slug": "chapter-11-dip-the-dependency-inversion-principle",
+      "file": "chapters/chapter-11.md",
+      "start_page": 99,
+      "end_page": 103,
+      "word_count": 1024
+    },
+    {
+      "chapter": 12,
+      "part": "PART IV Component Principles",
+      "title": "Components",
+      "slug": "chapter-12-components",
+      "file": "chapters/chapter-12.md",
+      "start_page": 105,
+      "end_page": 111,
+      "word_count": 1634
+    },
+    {
+      "chapter": 13,
+      "part": "PART IV Component Principles",
+      "title": "Component Cohesion",
+      "slug": "chapter-13-component-cohesion",
+      "file": "chapters/chapter-13.md",
+      "start_page": 112,
+      "end_page": 118,
+      "word_count": 1820
+    },
+    {
+      "chapter": 14,
+      "part": "PART IV Component Principles",
+      "title": "Component Coupling",
+      "slug": "chapter-14-component-coupling",
+      "file": "chapters/chapter-14.md",
+      "start_page": 119,
+      "end_page": 139,
+      "word_count": 5284
+    },
+    {
+      "chapter": 15,
+      "part": "PART V Architecture",
+      "title": "What Is Architecture?",
+      "slug": "chapter-15-what-is-architecture",
+      "file": "chapters/chapter-15.md",
+      "start_page": 141,
+      "end_page": 150,
+      "word_count": 3400
+    },
+    {
+      "chapter": 16,
+      "part": "PART V Architecture",
+      "title": "Independence",
+      "slug": "chapter-16-independence",
+      "file": "chapters/chapter-16.md",
+      "start_page": 151,
+      "end_page": 160,
+      "word_count": 3023
+    },
+    {
+      "chapter": 17,
+      "part": "PART V Architecture",
+      "title": "Boundaries: Drawing Lines",
+      "slug": "chapter-17-boundaries-drawing-lines",
+      "file": "chapters/chapter-17.md",
+      "start_page": 161,
+      "end_page": 173,
+      "word_count": 3525
+    },
+    {
+      "chapter": 18,
+      "part": "PART V Architecture",
+      "title": "Boundary Anatomy",
+      "slug": "chapter-18-boundary-anatomy",
+      "file": "chapters/chapter-18.md",
+      "start_page": 174,
+      "end_page": 179,
+      "word_count": 1441
+    },
+    {
+      "chapter": 19,
+      "part": "PART V Architecture",
+      "title": "Policy and Level",
+      "slug": "chapter-19-policy-and-level",
+      "file": "chapters/chapter-19.md",
+      "start_page": 180,
+      "end_page": 184,
+      "word_count": 939
+    },
+    {
+      "chapter": 20,
+      "part": "PART V Architecture",
+      "title": "Business Rules",
+      "slug": "chapter-20-business-rules",
+      "file": "chapters/chapter-20.md",
+      "start_page": 185,
+      "end_page": 190,
+      "word_count": 1387
+    },
+    {
+      "chapter": 21,
+      "part": "PART V Architecture",
+      "title": "Screaming Architecture",
+      "slug": "chapter-21-screaming-architecture",
+      "file": "chapters/chapter-21.md",
+      "start_page": 191,
+      "end_page": 194,
+      "word_count": 1026
+    },
+    {
+      "chapter": 22,
+      "part": "PART V Architecture",
+      "title": "The Clean Architecture",
+      "slug": "chapter-22-the-clean-architecture",
+      "file": "chapters/chapter-22.md",
+      "start_page": 195,
+      "end_page": 201,
+      "word_count": 1875
+    },
+    {
+      "chapter": 23,
+      "part": "PART V Architecture",
+      "title": "Presenters and Humble Objects",
+      "slug": "chapter-23-presenters-and-humble-objects",
+      "file": "chapters/chapter-23.md",
+      "start_page": 202,
+      "end_page": 205,
+      "word_count": 1140
+    },
+    {
+      "chapter": 24,
+      "part": "PART V Architecture",
+      "title": "Partial Boundaries",
+      "slug": "chapter-24-partial-boundaries",
+      "file": "chapters/chapter-24.md",
+      "start_page": 206,
+      "end_page": 209,
+      "word_count": 758
+    },
+    {
+      "chapter": 25,
+      "part": "PART V Architecture",
+      "title": "Layers and Boundaries",
+      "slug": "chapter-25-layers-and-boundaries",
+      "file": "chapters/chapter-25.md",
+      "start_page": 210,
+      "end_page": 218,
+      "word_count": 1800
+    },
+    {
+      "chapter": 26,
+      "part": "PART V Architecture",
+      "title": "The Main Component",
+      "slug": "chapter-26-the-main-component",
+      "file": "chapters/chapter-26.md",
+      "start_page": 219,
+      "end_page": 223,
+      "word_count": 711
+    },
+    {
+      "chapter": 27,
+      "part": "PART V Architecture",
+      "title": "Services: Great and Small",
+      "slug": "chapter-27-services-great-and-small",
+      "file": "chapters/chapter-27.md",
+      "start_page": 224,
+      "end_page": 232,
+      "word_count": 1847
+    },
+    {
+      "chapter": 28,
+      "part": "PART V Architecture",
+      "title": "The Test Boundary",
+      "slug": "chapter-28-the-test-boundary",
+      "file": "chapters/chapter-28.md",
+      "start_page": 233,
+      "end_page": 236,
+      "word_count": 1056
+    },
+    {
+      "chapter": 29,
+      "part": "PART V Architecture",
+      "title": "Clean Embedded Architecture",
+      "slug": "chapter-29-clean-embedded-architecture",
+      "file": "chapters/chapter-29.md",
+      "start_page": 237,
+      "end_page": 253,
+      "word_count": 4181
+    },
+    {
+      "chapter": 30,
+      "part": "PART VI Details",
+      "title": "The Database Is a Detail",
+      "slug": "chapter-30-the-database-is-a-detail",
+      "file": "chapters/chapter-30.md",
+      "start_page": 255,
+      "end_page": 260,
+      "word_count": 1937
+    },
+    {
+      "chapter": 31,
+      "part": "PART VI Details",
+      "title": "The Web Is a Detail",
+      "slug": "chapter-31-the-web-is-a-detail",
+      "file": "chapters/chapter-31.md",
+      "start_page": 261,
+      "end_page": 264,
+      "word_count": 1190
+    },
+    {
+      "chapter": 32,
+      "part": "PART VI Details",
+      "title": "Frameworks Are Details",
+      "slug": "chapter-32-frameworks-are-details",
+      "file": "chapters/chapter-32.md",
+      "start_page": 265,
+      "end_page": 268,
+      "word_count": 955
+    },
+    {
+      "chapter": 33,
+      "part": "PART VI Details",
+      "title": "Case Study: Video Sales",
+      "slug": "chapter-33-case-study-video-sales",
+      "file": "chapters/chapter-33.md",
+      "start_page": 269,
+      "end_page": 274,
+      "word_count": 1164
+    },
+    {
+      "chapter": 34,
+      "part": "PART VI Details",
+      "title": "The Missing Chapter",
+      "slug": "chapter-34-the-missing-chapter",
+      "file": "chapters/chapter-34.md",
+      "start_page": 275,
+      "end_page": 292,
+      "word_count": 3868
+    }
+  ]
+}

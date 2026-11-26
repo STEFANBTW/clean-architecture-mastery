@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clean Architecture Mastery — Interactive Testing Platform</title>
+  <meta name="description" content="Minimalist Material Design 3 interactive assessment platform for Robert C. Martin's Clean Architecture, featuring 30 deep-drilling questions per chapter, Study Mode, Test Mode, live JavaScript sandbox, and Gemini AI evaluation." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Minimalist Material Design 3 Top App Bar -->
+  <header class="top-bar" role="banner">
+    <div class="top-bar-inner">
+      <button id="brand-home-btn" class="brand-btn" type="button" aria-label="Return to Chapter Library">
+        <span class="brand-mark">CA</span>
+        <span class="brand-title">Clean Architecture</span>
+      </button>
+
+      <div id="top-bar-center" class="top-bar-center"></div>
+
+      <div class="top-bar-actions">
+        <button id="open-api-modal-btn" class="icon-btn" type="button" title="Gemini AI Grader Settings" aria-label="Gemini AI Grader Settings">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+          </svg>
+          <span id="api-status-dot" class="api-dot" aria-hidden="true"></span>
+        </button>
+
+        <button id="theme-toggle-btn" class="icon-btn" type="button" title="Toggle Light / Dark Theme" aria-label="Toggle Light / Dark Theme">
+          <svg id="theme-icon-sun" class="hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+          <svg id="theme-icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="quiz-linear-progress" aria-hidden="true">
+      <div id="top-progress-fill" class="quiz-linear-progress-fill"></div>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main id="app-main" class="app-main" role="main"></main>
+
+  <!-- Gemini API Key Modal -->
+  <div id="api-modal-backdrop" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="api-modal-title">
+    <div class="modal-card">
+      <h2 id="api-modal-title" class="modal-title">Gemini AI Evaluator</h2>
+      <p class="modal-desc">
+        Attach your Google Gemini API key to evaluate your written explanations, trade-off defenses, and JavaScript code solutions in your own words. Stored strictly in your browser's local storage.
+      </p>
+      <div class="field-group">
+        <label class="field-label" for="gemini-key-input">Gemini API Key</label>
+        <input id="gemini-key-input" class="field-input" type="password" placeholder="AIzaSy..." autocomplete="off" />
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="gemini-model-select">Model</label>
+        <select id="gemini-model-select" class="field-input">
+          <option value="gemini-2.5-flash">gemini-2.5-flash (Fast &amp; Accurate)</option>
+          <option value="gemini-2.0-flash">gemini-2.0-flash</option>
+          <option value="gemini-2.5-pro">gemini-2.5-pro (Deep Reasoning)</option>
+        </select>
+      </div>
+      <div id="api-test-feedback" class="modal-desc" style="margin-bottom:0;"></div>
+      <div class="modal-actions">
+        <button id="clear-api-key-btn" class="btn btn-text" type="button">Clear</button>
+        <button id="close-api-modal-btn" class="btn btn-outlined" type="button">Cancel</button>
+        <button id="save-api-key-btn" class="btn btn-filled" type="button">Save Key</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
