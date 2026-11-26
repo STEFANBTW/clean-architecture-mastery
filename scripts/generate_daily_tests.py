@@ -27,7 +27,7 @@ TESTS_MANIFEST_PATH = os.path.join(ROOT_DIR, "data", "tests_manifest.json")
 TESTS_DIR = os.path.join(ROOT_DIR, "data", "tests")
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash").strip()
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.8-flash").strip()
 GMAIL_USER = os.environ.get("GMAIL_USER", "sa.adeyemi788@gmail.com").strip()
 GMAIL_TO = os.environ.get("GMAIL_TO", "sa.adeyemi788@gmail.com").strip()
 GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "").strip()
@@ -92,7 +92,6 @@ def call_gemini_for_chapter(chapter_meta: dict, chapter_text: str, today_str: st
         "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT}]},
         "contents": [{"parts": [{"text": user_prompt}]}],
         "generationConfig": {
-            "temperature": 0.35,
             "responseMimeType": "application/json",
         },
     }

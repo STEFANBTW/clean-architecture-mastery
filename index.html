@@ -1,8 +1,17 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <script>
+    try {
+      const savedScheme = localStorage.getItem("ca_mastery_color_scheme");
+      if (savedScheme === "light" || savedScheme === "dark") {
+        document.querySelector('meta[name="color-scheme"]').content = savedScheme;
+      }
+    } catch {}
+  </script>
   <title>Clean Architecture Mastery — Interactive Testing Platform</title>
   <meta name="description" content="Minimalist Material Design 3 interactive assessment platform for Robert C. Martin's Clean Architecture, featuring 30 deep-drilling questions per chapter, Study Mode, Test Mode, live JavaScript sandbox, and Gemini AI evaluation." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -11,77 +20,92 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <!-- Minimalist Material Design 3 Top App Bar -->
-  <header class="top-bar" role="banner">
-    <div class="top-bar-inner">
-      <button id="brand-home-btn" class="brand-btn" type="button" aria-label="Return to Chapter Library">
-        <span class="brand-mark">CA</span>
-        <span class="brand-title">Clean Architecture</span>
-      </button>
+  <div class="page-shell">
+    <!-- State-Aware Sticky Top App Bar -->
+    <header class="top-bar-container" role="banner">
+      <div class="top-bar">
+        <div class="top-bar-inner">
+          <button id="brand-home-btn" class="brand-btn" type="button" aria-label="Return to Chapter Library">
+            <span class="brand-mark" aria-hidden="true">CA</span>
+            <span class="brand-title">Clean Architecture</span>
+          </button>
 
-      <div id="top-bar-center" class="top-bar-center"></div>
+          <div id="top-bar-center" class="top-bar-center"></div>
 
-      <div class="top-bar-actions">
-        <button id="open-api-modal-btn" class="icon-btn" type="button" title="Gemini AI Grader Settings" aria-label="Gemini AI Grader Settings">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
-          </svg>
-          <span id="api-status-dot" class="api-dot" aria-hidden="true"></span>
-        </button>
+          <div class="top-bar-actions">
+            <button id="open-api-modal-btn" class="icon-btn glimmer-btn" type="button" command="show-modal" commandfor="api-dialog" aria-label="Gemini AI Evaluator Settings">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+              </svg>
+              <span id="api-status-dot" class="api-dot" aria-hidden="true"></span>
+            </button>
 
-        <button id="theme-toggle-btn" class="icon-btn" type="button" title="Toggle Light / Dark Theme" aria-label="Toggle Light / Dark Theme">
-          <svg id="theme-icon-sun" class="hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="5"></circle>
-            <line x1="12" y1="1" x2="12" y2="3"></line>
-            <line x1="12" y1="21" x2="12" y2="23"></line>
-            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-            <line x1="1" y1="12" x2="3" y2="12"></line>
-            <line x1="21" y1="12" x2="23" y2="12"></line>
-            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-          </svg>
-          <svg id="theme-icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-          </svg>
-        </button>
+            <button id="theme-toggle-btn" class="icon-btn glimmer-btn" type="button" aria-label="Switch color theme">
+              <svg class="theme-icon-sun" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+              </svg>
+              <svg class="theme-icon-moon" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+              </svg>
+              <span class="visually-hidden theme-label-dark">Switch to dark theme</span>
+              <span class="visually-hidden theme-label-light">Switch to light theme</span>
+            </button>
+          </div>
+        </div>
+        <div class="quiz-linear-progress" aria-hidden="true">
+          <div id="top-progress-fill" class="quiz-linear-progress-fill"></div>
+        </div>
       </div>
-    </div>
-    <div class="quiz-linear-progress" aria-hidden="true">
-      <div id="top-progress-fill" class="quiz-linear-progress-fill"></div>
-    </div>
-  </header>
+    </header>
 
-  <!-- Main Workspace -->
-  <main id="app-main" class="app-main" role="main"></main>
+    <!-- Main Focus Workspace -->
+    <main id="app-main" class="app-main" tabindex="-1"></main>
+  </div>
 
-  <!-- Gemini API Key Modal -->
-  <div id="api-modal-backdrop" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="api-modal-title">
-    <div class="modal-card">
-      <h2 id="api-modal-title" class="modal-title">Gemini AI Evaluator</h2>
-      <p class="modal-desc">
-        Attach your Google Gemini API key to evaluate your written explanations, trade-off defenses, and JavaScript code solutions in your own words. Stored strictly in your browser's local storage.
-      </p>
+  <!-- Screen Reader Single Live Status Region -->
+  <p id="sr-live-status" role="status" class="visually-hidden"></p>
+
+  <!-- Native Top-Layer Modal Dialog with Declarative Light-Dismiss -->
+  <dialog id="api-dialog" class="modal-dialog" closedby="any" aria-labelledby="api-modal-title">
+    <div class="modal-card-inner">
+      <div class="title-with-tip">
+        <h1 id="api-modal-title" class="modal-title">Gemini API Key</h1>
+        <button type="button" class="info-tip-trigger" interestfor="tip-api-privacy" popovertarget="tip-api-privacy" popovertargetaction="show" aria-label="About Gemini API key storage">i</button>
+        <div id="tip-api-privacy" class="info-tip-popover" popover="hint">
+          <div class="info-tip-inner">Your key is saved strictly in this browser's localStorage and sent only to Google's Gemini API when grading your written explanations and defenses.</div>
+        </div>
+      </div>
+      <p class="modal-desc">Grades your own-words answers live.</p>
       <div class="field-group">
-        <label class="field-label" for="gemini-key-input">Gemini API Key</label>
-        <input id="gemini-key-input" class="field-input" type="password" placeholder="AIzaSy..." autocomplete="off" />
+        <label class="field-label" for="gemini-key-input">API Key</label>
+        <input id="gemini-key-input" class="field-input" type="password" placeholder="AIzaSy..." autocomplete="off" autofocus />
       </div>
       <div class="field-group">
         <label class="field-label" for="gemini-model-select">Model</label>
         <select id="gemini-model-select" class="field-input">
-          <option value="gemini-2.5-flash">gemini-2.5-flash (Fast &amp; Accurate)</option>
-          <option value="gemini-2.0-flash">gemini-2.0-flash</option>
-          <option value="gemini-2.5-pro">gemini-2.5-pro (Deep Reasoning)</option>
+          <option value="gemini-3.8-flash">gemini-3.8-flash (Recommended)</option>
+          <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Fastest · Low Cost)</option>
+          <option value="gemini-3.6-flash">gemini-3.6-flash</option>
+          <option value="gemini-4-hydrogen">gemini-4-hydrogen (General Flagship)</option>
+          <option value="gemini-4-neon">gemini-4-neon (Deep Reasoning)</option>
         </select>
       </div>
-      <div id="api-test-feedback" class="modal-desc" style="margin-bottom:0;"></div>
-      <div class="modal-actions">
+      <p id="api-test-feedback" class="modal-desc modal-status-line"></p>
+      <form method="dialog" class="modal-actions">
         <button id="clear-api-key-btn" class="btn btn-text" type="button">Clear</button>
-        <button id="close-api-modal-btn" class="btn btn-outlined" type="button">Cancel</button>
-        <button id="save-api-key-btn" class="btn btn-filled" type="button">Save Key</button>
-      </div>
+        <button id="close-api-modal-btn" class="btn btn-outlined glimmer-btn" type="submit" value="cancel">Cancel</button>
+        <button id="save-api-key-btn" class="btn btn-filled glimmer-btn" type="button">Save</button>
+      </form>
     </div>
-  </div>
+  </dialog>
 
   <script src="app.js"></script>
 </body>

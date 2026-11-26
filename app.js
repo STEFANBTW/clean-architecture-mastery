@@ -1,27 +1,19 @@
 /* ==========================================================================
-   Clean Architecture Mastery — Interactive Testing Engine (Pure Vanilla JS)
-   Supports:
-   - Study Mode (immediate green/red feedback + per-option explanations + live AI)
-   - Test Mode (custom timer, locked answers until submission, batch AI grading)
-   - 10 Deep-Learning Question Formats:
-     1. mcq_single      (Diagnostic MCQ — every right & wrong option explained)
-     2. mcq_multi       (Multi-Select MCQ — every option explained)
-     3. spot_flaw       (Click the flawed line(s) in JS code or architectural spec)
-     4. cloze_bank      (Interactive fill-in-the-blank with clickable word bank)
-     5. cloze_typed     (Precision fill-in-the-blank in your own words)
-     6. order_steps     (Drag-and-drop / arrow sequence & causal chain puzzle)
-     7. match_pairs     (Connect concepts, symptoms, or metrics to consequences)
-     8. classify_buckets(Triage sort items into architectural buckets)
-     9. claim_audit     (Audit a statement: True / False / Trap + justification)
-     10. free_response  (Feynman / Contrast / Counterfactual graded by Gemini AI)
-     11. js_code        (Live sandboxed JavaScript execution + unit tests + AI)
+   Clean Architecture Mastery — Interactive Testing Engine
+   Modernized with Google Chrome Modern Web Guidance:
+   - Surgical in-place DOM updates (zero full-card re-render glitching)
+   - Directional View Transitions (document.startViewTransition with types)
+   - Native <dialog closedby="any"> with top-layer exit animation & light-dismiss fallbacks
+   - Identity-preserving moveBefore() reordering with view-transition-name: match-element
+   - System-aware tri-state color-scheme <meta> toggle
+   - Element.prototype.replaceChildren(), AbortSignal.timeout(), structuredClone(), .toSorted()
    ========================================================================== */
 
 (() => {
   "use strict";
 
   const STORAGE_KEYS = {
-    THEME: "ca_mastery_theme",
+    COLOR_SCHEME: "ca_mastery_color_scheme",
     GEMINI_KEY: "ca_mastery_gemini_key",
     GEMINI_MODEL: "ca_mastery_gemini_model",
     HISTORY: "ca_mastery_history_v1",
@@ -52,128 +44,475 @@
       timerMinutes: 45,
       customMinutes: "",
     },
-    session: null, // active quiz state
+    session: null,
     timerInterval: null,
     activeClozeSlot: 0,
     activeMatchLeft: null,
     activeBucketItem: null,
-    dragOrderIdx: null,
+    dragOrderNode: null,
     reviewFilter: "all", // 'all' | 'wrong' | 'ai' | 'flagged'
     isGradingBatch: false,
+    navDrawerOpen: false,
   };
 
   /* ------------------------------------------------------------------------
-     Initialization & Theme
+     Initialization
      ------------------------------------------------------------------------ */
 
   document.addEventListener("DOMContentLoaded", async () => {
-    initTheme();
-    initApiModal();
+    initColorSchemeToggle();
+    initApiDialog();
+    initStickyHeaderFallback();
+    initKeyboardShortcuts();
+    initToggletipSystem();
+
     document.getElementById("brand-home-btn").addEventListener("click", () => {
+      if (state.view === "home") return;
       stopTimer();
-      state.view = "home";
-      render();
+      window.location.hash = "";
+      navigateWithTransition(() => {
+        state.view = "home";
+        render();
+      }, "backward");
     });
 
     await loadTestsManifest();
-    handleHashRoute();
+    await handleHashRoute();
     window.addEventListener("hashchange", handleHashRoute);
   });
 
-  function initTheme() {
-    const saved = localStorage.getItem(STORAGE_KEYS.THEME) || "light";
-    applyTheme(saved);
-    document.getElementById("theme-toggle-btn").addEventListener("click", () => {
-      const current = document.documentElement.getAttribute("data-theme") || "light";
-      applyTheme(current === "light" ? "dark" : "light");
+  function initStickyHeaderFallback() {
+    if (window.CSS?.supports?.("container-type", "scroll-state")) return;
+    const sticky = document.querySelector(".top-bar-container");
+    if (!sticky) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        sticky.classList.toggle("is-stuck", entry.intersectionRatio < 1);
+      },
+      { threshold: [1], rootMargin: "-1px 0px 0px 0px" }
+    );
+    observer.observe(sticky);
+  }
+
+  function initKeyboardShortcuts() {
+    document.addEventListener("keydown", (e) => {
+      if (state.view !== "quiz" || !state.session || state.isGradingBatch) return;
+      const tag = document.activeElement?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if (e.altKey && e.key === "ArrowRight") {
+        document.getElementById("next-q-btn")?.click();
+      } else if (e.altKey && e.key === "ArrowLeft") {
+        document.getElementById("prev-q-btn")?.click();
+      }
     });
   }
 
-  function applyTheme(theme) {
-    document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem(STORAGE_KEYS.THEME, theme);
-    const sun = document.getElementById("theme-icon-sun");
-    const moon = document.getElementById("theme-icon-moon");
-    if (theme === "dark") {
-      sun.classList.remove("hidden");
-      moon.classList.add("hidden");
+  /* ------------------------------------------------------------------------
+     Native Toggletip System (interestfor + popover="hint" + WCAG 1.4.13 Fallback)
+     ------------------------------------------------------------------------ */
+
+  const ownedToggletipTriggers = new WeakSet();
+
+  function initToggletipSystem() {
+    // Switch unsupported popover="hint" toggletips to "auto" in capturing beforetoggle
+    const probe = document.createElement("div");
+    probe.popover = "hint";
+    if (probe.popover !== "hint") {
+      document.addEventListener(
+        "beforetoggle",
+        ({ target, newState }) => {
+          if (!(target instanceof HTMLElement)) return;
+          const isToggletip =
+            target.getAttribute("popover") === "hint" &&
+            target.id &&
+            document.querySelector(`[popovertarget="${CSS.escape(target.id)}"]`);
+          if (newState === "open" && isToggletip) {
+            target.popover = "auto";
+          }
+        },
+        true
+      );
+    }
+
+    // Sync aria-expanded from popover toggle events (capture phase since toggle does not bubble)
+    document.addEventListener(
+      "toggle",
+      (event) => {
+        const pop = event.target;
+        if (!(pop instanceof HTMLElement) || !pop.id) return;
+        const isOpen = event.newState === "open";
+        document.querySelectorAll(`[interestfor="${CSS.escape(pop.id)}"]`).forEach((trigger) => {
+          if (ownedToggletipTriggers.has(trigger)) {
+            trigger.setAttribute("aria-expanded", String(isOpen));
+          }
+        });
+      },
+      true
+    );
+
+    wireToggletips(document);
+  }
+
+  function positionPopoverNearTrigger(trigger, pop) {
+    if (window.CSS?.supports?.("position-area: block-end")) return;
+    const rect = trigger.getBoundingClientRect();
+    const popWidth = Math.min(360, window.innerWidth - 32);
+    const left = Math.max(16, Math.min(rect.left, window.innerWidth - popWidth - 16));
+    const spaceBelow = window.innerHeight - rect.bottom;
+    pop.style.position = "fixed";
+    pop.style.margin = "0";
+    pop.style.inset = "auto";
+    pop.style.left = `${left}px`;
+    if (spaceBelow >= 180 || spaceBelow >= rect.top) {
+      pop.style.top = `${rect.bottom + 8}px`;
+      pop.style.bottom = "auto";
     } else {
-      sun.classList.add("hidden");
-      moon.classList.remove("hidden");
+      pop.style.bottom = `${window.innerHeight - rect.top + 8}px`;
+      pop.style.top = "auto";
     }
   }
 
-  /* ------------------------------------------------------------------------
-     Gemini API Key Settings
-     ------------------------------------------------------------------------ */
+  function wireToggletips(root = document) {
+    const nativeInterest = "interestForElement" in HTMLButtonElement.prototype;
+    root.querySelectorAll("[interestfor]").forEach((trigger) => {
+      if (trigger.dataset.tipWired === "1") return;
+      const targetId = trigger.getAttribute("interestfor");
+      const pop = targetId ? document.getElementById(targetId) : null;
+      if (!pop) return;
+      trigger.dataset.tipWired = "1";
 
-  function getGeminiKey() {
-    return (localStorage.getItem(STORAGE_KEYS.GEMINI_KEY) || "").trim();
+      // Explicit ARIA wiring for assistive tech
+      if (!pop.hasAttribute("role")) {
+        pop.setAttribute("role", "tooltip");
+      }
+      if (!trigger.hasAttribute("aria-expanded")) {
+        trigger.setAttribute("aria-expanded", String(pop.matches(":popover-open")));
+        ownedToggletipTriggers.add(trigger);
+      }
+
+      // Prevent chapter/mode card parent button click when tapping an embedded info icon
+      trigger.addEventListener("click", (e) => {
+        e.stopPropagation();
+        positionPopoverNearTrigger(trigger, pop);
+      });
+
+      if (!nativeInterest && typeof pop.showPopover === "function") {
+        let hideTimer = null;
+        const scheduleHide = () => {
+          clearTimeout(hideTimer);
+          hideTimer = setTimeout(() => {
+            if (pop.matches(":popover-open")) {
+              try {
+                pop.hidePopover();
+              } catch {}
+            }
+          }, 150);
+        };
+        const openNow = () => {
+          clearTimeout(hideTimer);
+          positionPopoverNearTrigger(trigger, pop);
+          if (!pop.matches(":popover-open")) {
+            try {
+              pop.showPopover();
+            } catch {}
+          }
+        };
+
+        trigger.addEventListener("pointerenter", (e) => {
+          if (e.pointerType !== "touch") openNow();
+        });
+        trigger.addEventListener("pointerleave", (e) => {
+          if (e.pointerType !== "touch") scheduleHide();
+        });
+        trigger.addEventListener("focus", openNow);
+        trigger.addEventListener("blur", scheduleHide);
+        pop.addEventListener("pointerenter", () => clearTimeout(hideTimer));
+        pop.addEventListener("pointerleave", scheduleHide);
+      }
+    });
   }
 
+  function renderInfoTip(id, ariaLabel, detailsText) {
+    if (!detailsText || !String(detailsText).trim()) return "";
+    return `
+      <span class="inline-with-tip" style="gap:0;">
+        <button
+          type="button"
+          class="info-tip-trigger"
+          interestfor="${escapeHtml(id)}"
+          popovertarget="${escapeHtml(id)}"
+          popovertargetaction="show"
+          aria-label="${escapeHtml(ariaLabel)}"
+        >i</button>
+        <div id="${escapeHtml(id)}" class="info-tip-popover" popover="hint">
+          <div class="info-tip-inner">${escapeHtml(detailsText)}</div>
+        </div>
+      </span>
+    `;
+  }
+
+  /* ------------------------------------------------------------------------
+     View Transitions Helper (directional-navigation-transitions & same-document-transitions)
+     ------------------------------------------------------------------------ */
+
+  function navigateWithTransition(updateDOM, direction = "forward", focusTargetSelector = "#app-main") {
+    const routeFocus = () => {
+      const target = document.querySelector(focusTargetSelector) || document.getElementById("app-main");
+      target?.focus({ preventScroll: true });
+    };
+
+    if (!document.startViewTransition) {
+      updateDOM();
+      routeFocus();
+      return;
+    }
+
+    try {
+      const transition = document.startViewTransition({
+        update: updateDOM,
+        types: [direction],
+      });
+      transition.finished.finally(routeFocus);
+    } catch {
+      const transition = document.startViewTransition(updateDOM);
+      transition.finished.finally(routeFocus);
+    }
+  }
+
+  function announceStatus(message) {
+    const el = document.getElementById("sr-live-status");
+    if (el) el.textContent = message;
+  }
+
+  /* ------------------------------------------------------------------------
+     Color Scheme Toggle (dark-mode & dark-mode-toggle guides)
+     ------------------------------------------------------------------------ */
+
+  function getMetaColorScheme() {
+    return document.querySelector('meta[name="color-scheme"]');
+  }
+
+  function getSystemScheme() {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+
+  function getStoredScheme() {
+    try {
+      const val = localStorage.getItem(STORAGE_KEYS.COLOR_SCHEME);
+      return val === "light" || val === "dark" ? val : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function initColorSchemeToggle() {
+    const meta = getMetaColorScheme();
+    const stored = getStoredScheme();
+    if (meta) {
+      meta.content = stored ?? "light dark";
+    }
+
+    document.getElementById("theme-toggle-btn").addEventListener("click", () => {
+      const systemScheme = getSystemScheme();
+      const currentRendered = getStoredScheme() ?? systemScheme;
+      const targetScheme = currentRendered === "dark" ? "light" : "dark";
+
+      try {
+        if (targetScheme === systemScheme) {
+          localStorage.removeItem(STORAGE_KEYS.COLOR_SCHEME);
+        } else {
+          localStorage.setItem(STORAGE_KEYS.COLOR_SCHEME, targetScheme);
+        }
+      } catch {}
+
+      if (meta) {
+        meta.content = targetScheme === systemScheme ? "light dark" : targetScheme;
+      }
+      announceStatus(`Switched to ${targetScheme} color theme`);
+    });
+
+    window.addEventListener("storage", (event) => {
+      if (event.key === STORAGE_KEYS.COLOR_SCHEME && meta) {
+        meta.content = getStoredScheme() ?? "light dark";
+      }
+    });
+  }
+
+  /* ------------------------------------------------------------------------
+     Native <dialog> Modal + Top-Layer Exit Animation Fallback
+     (dialog, light-dismiss-a-dialog, animate-to-from-top-layer)
+     ------------------------------------------------------------------------ */
+
+  let supportsDisplayTransition;
+  function canTransitionDisplay() {
+    if (supportsDisplayTransition !== undefined) return supportsDisplayTransition;
+    if (!window.CSS?.supports?.("transition-behavior", "allow-discrete") || !document.body) {
+      return false;
+    }
+    const probe = document.createElement("div");
+    probe.style.cssText = "transition: display 1s allow-discrete !important; display: block;";
+    document.body.appendChild(probe);
+    getComputedStyle(probe).display;
+    probe.style.display = "none";
+    supportsDisplayTransition = getComputedStyle(probe).display === "block";
+    probe.remove();
+    return supportsDisplayTransition;
+  }
+
+  function supportsTopLayerExit() {
+    return Boolean(window.CSS?.supports?.("overlay", "auto") && canTransitionDisplay());
+  }
+
+  async function closeTopLayer(dialogEl) {
+    if (!dialogEl.open) return;
+    if (!supportsTopLayerExit()) {
+      dialogEl.setAttribute("data-closing", "");
+      const animations = dialogEl.getAnimations({ subtree: true });
+      if (animations.length > 0) {
+        await Promise.race([
+          Promise.allSettled(animations.map((a) => a.finished)),
+          new Promise((r) => setTimeout(r, 400)),
+        ]);
+      }
+      if (!dialogEl.hasAttribute("data-closing")) return;
+      dialogEl.removeAttribute("data-closing");
+    }
+    dialogEl.close();
+  }
+
+  function getGeminiKey() {
+    try {
+      return (localStorage.getItem(STORAGE_KEYS.GEMINI_KEY) || "").trim();
+    } catch {
+      return "";
+    }
+  }
+
+  const VALID_GEMINI_MODELS = new Set([
+    "gemini-3.8-flash",
+    "gemini-3.5-flash-lite",
+    "gemini-3.6-flash",
+    "gemini-4-hydrogen",
+    "gemini-4-neon",
+  ]);
+
   function getGeminiModel() {
-    return localStorage.getItem(STORAGE_KEYS.GEMINI_MODEL) || "gemini-2.5-flash";
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.GEMINI_MODEL);
+      if (saved && VALID_GEMINI_MODELS.has(saved)) return saved;
+      return "gemini-3.8-flash";
+    } catch {
+      return "gemini-3.8-flash";
+    }
   }
 
   function updateApiDot() {
     const dot = document.getElementById("api-status-dot");
     if (!dot) return;
-    if (getGeminiKey()) {
-      dot.classList.add("connected");
-    } else {
-      dot.classList.remove("connected");
-    }
+    dot.classList.toggle("connected", Boolean(getGeminiKey()));
   }
 
-  function initApiModal() {
+  function initApiDialog() {
     updateApiDot();
-    const backdrop = document.getElementById("api-modal-backdrop");
+    const dialog = document.getElementById("api-dialog");
+    const openBtn = document.getElementById("open-api-modal-btn");
+    const closeBtn = document.getElementById("close-api-modal-btn");
+    const clearBtn = document.getElementById("clear-api-key-btn");
+    const saveBtn = document.getElementById("save-api-key-btn");
     const input = document.getElementById("gemini-key-input");
     const modelSelect = document.getElementById("gemini-model-select");
     const feedback = document.getElementById("api-test-feedback");
 
-    document.getElementById("open-api-modal-btn").addEventListener("click", () => {
+    const populateDialogFields = () => {
       input.value = getGeminiKey();
       modelSelect.value = getGeminiModel();
       feedback.textContent = getGeminiKey()
-        ? "API key is active in local storage."
-        : "No API key saved yet. Heuristic rubric grading will be used as a fallback until you add one.";
-      backdrop.classList.remove("hidden");
+        ? "✓ Gemini API key is active in local storage."
+        : "No API key saved yet. Built-in Rubric Analyzer will grade open-ended answers until you add one.";
+    };
+
+    openBtn.addEventListener("click", () => {
+      populateDialogFields();
+      if (!dialog.open) {
+        dialog.showModal();
+      }
     });
 
-    document.getElementById("close-api-modal-btn").addEventListener("click", () => {
-      backdrop.classList.add("hidden");
+    closeBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      closeTopLayer(dialog);
     });
 
-    document.getElementById("clear-api-key-btn").addEventListener("click", () => {
-      localStorage.removeItem(STORAGE_KEYS.GEMINI_KEY);
+    dialog.addEventListener("cancel", (e) => {
+      e.preventDefault();
+      closeTopLayer(dialog);
+    });
+
+    dialog.addEventListener("close", () => {
+      dialog.returnValue = "";
+    });
+
+    // Fallback for browsers without native <dialog closedby="any"> support
+    if (!("closedBy" in HTMLDialogElement.prototype)) {
+      const isOutside = (e, dlg) => {
+        const r = dlg.getBoundingClientRect();
+        return e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom;
+      };
+      let pressedOutside = false;
+      dialog.addEventListener("pointerdown", (e) => {
+        pressedOutside = e.target === dialog && isOutside(e, dialog);
+      });
+      dialog.addEventListener("pointerup", (e) => {
+        if (pressedOutside && e.target === dialog && isOutside(e, dialog)) {
+          closeTopLayer(dialog);
+        }
+        pressedOutside = false;
+      });
+    }
+
+    clearBtn.addEventListener("click", () => {
+      try {
+        localStorage.removeItem(STORAGE_KEYS.GEMINI_KEY);
+      } catch {}
       input.value = "";
       updateApiDot();
       feedback.textContent = "API key cleared from this browser.";
+      updateHomeApiStatInPlace();
     });
 
-    document.getElementById("save-api-key-btn").addEventListener("click", () => {
+    saveBtn.addEventListener("click", () => {
       const val = input.value.trim();
-      if (val) {
-        localStorage.setItem(STORAGE_KEYS.GEMINI_KEY, val);
-      } else {
-        localStorage.removeItem(STORAGE_KEYS.GEMINI_KEY);
-      }
-      localStorage.setItem(STORAGE_KEYS.GEMINI_MODEL, modelSelect.value);
+      try {
+        if (val) {
+          localStorage.setItem(STORAGE_KEYS.GEMINI_KEY, val);
+        } else {
+          localStorage.removeItem(STORAGE_KEYS.GEMINI_KEY);
+        }
+        localStorage.setItem(STORAGE_KEYS.GEMINI_MODEL, modelSelect.value);
+      } catch {}
       updateApiDot();
-      backdrop.classList.add("hidden");
-      render();
+      updateHomeApiStatInPlace();
+      closeTopLayer(dialog);
     });
   }
 
+  function updateHomeApiStatInPlace() {
+    const statEl = document.getElementById("home-api-stat-val");
+    if (statEl) {
+      statEl.textContent = getGeminiKey() ? "Connected" : "Optional";
+    }
+  }
+
   /* ------------------------------------------------------------------------
-     Manifest & Deep-Link Routing
+     Manifest & Routing
      ------------------------------------------------------------------------ */
 
   async function loadTestsManifest() {
     try {
-      const res = await fetch(`data/tests_manifest.json?t=${Date.now()}`);
-      if (!res.ok) throw new Error("Failed to load tests_manifest.json");
+      const res = await fetch(`data/tests_manifest.json?t=${Date.now()}`, {
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       state.manifest = await res.json();
     } catch (err) {
       console.error(err);
@@ -182,10 +521,11 @@
   }
 
   async function handleHashRoute() {
-    const hash = window.location.hash || "";
-    const match = hash.match(/chapter=(\d+)/);
-    if (match && state.manifest) {
-      const chapNum = parseInt(match[1], 10);
+    const rawHash = window.location.hash.slice(1);
+    const params = new URLSearchParams(rawHash);
+    const chapParam = params.get("chapter");
+    if (chapParam && state.manifest) {
+      const chapNum = parseInt(chapParam, 10);
       const meta = (state.manifest.available_tests || []).find((t) => t.chapter === chapNum);
       if (meta) {
         await openChapterSetup(meta);
@@ -200,12 +540,17 @@
   async function openChapterSetup(meta) {
     state.selectedChapterMeta = meta;
     try {
-      const res = await fetch(`${meta.file}?t=${Date.now()}`);
+      const res = await fetch(`${meta.file}?t=${Date.now()}`, {
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       state.currentTest = await res.json();
-      state.view = "setup";
-      render();
+      navigateWithTransition(() => {
+        state.view = "setup";
+        render();
+      }, "forward");
     } catch (e) {
-      alert("Could not load chapter test JSON: " + e.message);
+      announceStatus(`Could not load chapter test: ${e.message}`);
     }
   }
 
@@ -222,16 +567,18 @@
   }
 
   function saveChapterResult(chapterNum, resultObj) {
-    const hist = getHistory();
-    const prev = hist[chapterNum];
-    const bestPct = prev ? Math.max(prev.bestPct || 0, resultObj.percentage) : resultObj.percentage;
-    hist[chapterNum] = {
-      ...resultObj,
-      bestPct,
-      attempts: (prev?.attempts || 0) + 1,
-      updatedAt: new Date().toISOString(),
-    };
-    localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(hist));
+    try {
+      const hist = getHistory();
+      const prev = hist[chapterNum];
+      const bestPct = prev ? Math.max(prev.bestPct || 0, resultObj.percentage) : resultObj.percentage;
+      hist[chapterNum] = {
+        ...resultObj,
+        bestPct,
+        attempts: (prev?.attempts || 0) + 1,
+        updatedAt: new Date().toISOString(),
+      };
+      localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(hist));
+    } catch {}
   }
 
   function getSavedSession(chapterNum) {
@@ -245,14 +592,18 @@
 
   function persistSession() {
     if (!state.session) return;
-    localStorage.setItem(
-      STORAGE_KEYS.SESSION_PREFIX + state.session.chapter,
-      JSON.stringify(state.session)
-    );
+    try {
+      localStorage.setItem(
+        STORAGE_KEYS.SESSION_PREFIX + state.session.chapter,
+        JSON.stringify(state.session)
+      );
+    } catch {}
   }
 
   function clearSavedSession(chapterNum) {
-    localStorage.removeItem(STORAGE_KEYS.SESSION_PREFIX + chapterNum);
+    try {
+      localStorage.removeItem(STORAGE_KEYS.SESSION_PREFIX + chapterNum);
+    } catch {}
   }
 
   /* ------------------------------------------------------------------------
@@ -264,7 +615,6 @@
     const initialAnswers = {};
     test.questions.forEach((q, idx) => {
       if (q.type === "order_steps") {
-        // Create a deterministic shuffled initial order if not already answers
         initialAnswers[idx] = [...q.initial_order];
       } else if (q.type === "js_code") {
         initialAnswers[idx] = q.starter_code || "";
@@ -285,31 +635,31 @@
       elapsedSeconds: 0,
       currentIndex: 0,
       answers: initialAnswers,
-      evaluations: {}, // idx -> { status: 'correct'|'partial'|'wrong', score: 0..1, feedback, rubricHits, jsResults }
+      evaluations: {},
       flagged: {},
       submitted: false,
       startedAt: new Date().toISOString(),
     };
 
-    state.activeClozeSlot = 0;
-    state.activeMatchLeft = null;
-    state.activeBucketItem = null;
+    resetTransientPickers();
     persistSession();
-    state.view = "quiz";
     startTimerIfNeeded();
-    render();
+    navigateWithTransition(() => {
+      state.view = "quiz";
+      render();
+    }, "forward");
   }
 
   function resumeSavedSession(saved) {
-    state.session = saved;
-    state.activeClozeSlot = 0;
-    state.activeMatchLeft = null;
-    state.activeBucketItem = null;
-    state.view = saved.submitted ? "results" : "quiz";
-    if (!saved.submitted) {
+    state.session = structuredClone(saved);
+    resetTransientPickers();
+    if (!state.session.submitted) {
       startTimerIfNeeded();
     }
-    render();
+    navigateWithTransition(() => {
+      state.view = state.session.submitted ? "results" : "quiz";
+      render();
+    }, "forward");
   }
 
   function startTimerIfNeeded() {
@@ -370,7 +720,7 @@
   }
 
   /* ------------------------------------------------------------------------
-     Evaluation Logic (Objective + JS Runner + Gemini AI)
+     Evaluation Logic (Objective + Sandboxed JS + Gemini AI with AbortSignal.timeout)
      ------------------------------------------------------------------------ */
 
   function isAnswerProvided(q, ans) {
@@ -440,7 +790,7 @@
 
       case "spot_flaw": {
         const selected = new Set(Array.isArray(ans) ? ans : []);
-        const expected = new Set(q.flawed_Indices || q.flawed_indices);
+        const expected = new Set(q.flawed_indices || []);
         let hits = 0;
         let misses = 0;
         selected.forEach((i) => {
@@ -529,9 +879,7 @@
     let passCount = 0;
     for (const tc of q.test_cases || []) {
       try {
-        const fn = new Function(
-          `${userCode}\n; return (${tc.call});`
-        );
+        const fn = new Function(`${userCode}\n; return (${tc.call});`);
         const actual = fn();
         const actualJson = JSON.stringify(actual);
         const expectedJson = JSON.stringify(tc.expected);
@@ -646,10 +994,10 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
       const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: AbortSignal.timeout(25_000),
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
-            temperature: 0.2,
             responseMimeType: "application/json",
           },
         }),
@@ -669,7 +1017,11 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
         rubricMissed: parsed.concepts_missed || [],
       };
     } catch (err) {
-      console.warn("Gemini API fallback:", err);
+      const reason =
+        err instanceof DOMException && err.name === "TimeoutError"
+          ? new Error("Gemini evaluation timed out after 25s", { cause: err })
+          : new Error(`Gemini API fallback: ${err.message}`, { cause: err });
+      console.warn(reason);
       const vMatch = q.type === "claim_audit" ? userAnswer?.verdict === q.correct_verdict : true;
       const text = q.type === "claim_audit" ? userAnswer?.reasoning || "" : userAnswer;
       return evaluateHeuristicRubric(q, text, vMatch);
@@ -722,8 +1074,10 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
 
     const summary = computeSessionSummary();
     saveChapterResult(state.currentTest.chapter, summary);
-    state.view = "results";
-    render();
+    navigateWithTransition(() => {
+      state.view = "results";
+      render();
+    }, "forward");
   }
 
   function computeSessionSummary() {
@@ -760,7 +1114,7 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
   }
 
   /* ------------------------------------------------------------------------
-     Top App Bar & View Dispatcher
+     Top App Bar & View Dispatcher (Element.prototype.replaceChildren())
      ------------------------------------------------------------------------ */
 
   function render() {
@@ -768,8 +1122,8 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
     const topCenter = document.getElementById("top-bar-center");
     const progressFill = document.getElementById("top-progress-fill");
 
-    topCenter.innerHTML = "";
-    progressFill.style.width = "0%";
+    topCenter.replaceChildren();
+    progressFill.style.inlineSize = "0%";
 
     if (state.view === "home") {
       renderHomeView(main);
@@ -779,9 +1133,11 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
       renderQuizTopBar(topCenter, progressFill);
       renderQuizView(main);
     } else if (state.view === "results") {
-      progressFill.style.width = "100%";
+      progressFill.style.inlineSize = "100%";
       renderResultsView(main);
     }
+
+    wireToggletips(main);
   }
 
   function renderQuizTopBar(topCenter, progressFill) {
@@ -790,9 +1146,9 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
       isAnswerProvided(q, state.session.answers[idx])
     ).length;
     const pct = Math.round(((state.session.currentIndex + 1) / total) * 100);
-    progressFill.style.width = `${pct}%`;
+    progressFill.style.inlineSize = `${pct}%`;
 
-    const modeLabel = state.session.mode === "study" ? "Study Mode" : "Test Mode";
+    const modeLabel = state.session.mode === "study" ? "Study" : "Test";
     const timeVal =
       state.session.mode === "test" && state.session.timerSecondsTotal > 0
         ? formatDuration(state.session.timerSecondsLeft)
@@ -800,20 +1156,31 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
 
     topCenter.innerHTML = `
       <div class="quiz-header-pills">
-        <span class="mode-pill">${modeLabel} · ${answeredCount}/${total}</span>
+        <span id="top-mode-count-pill" class="mode-pill">${modeLabel} · ${answeredCount}/${total}</span>
         <span id="live-timer-pill" class="timer-pill">${timeVal}</span>
       </div>
     `;
   }
 
+  function updateTopBarCountInPlace() {
+    const pill = document.getElementById("top-mode-count-pill");
+    if (!pill || !state.currentTest || !state.session) return;
+    const total = state.currentTest.questions.length;
+    const answeredCount = state.currentTest.questions.filter((q, idx) =>
+      isAnswerProvided(q, state.session.answers[idx])
+    ).length;
+    const modeLabel = state.session.mode === "study" ? "Study" : "Test";
+    pill.textContent = `${modeLabel} · ${answeredCount}/${total}`;
+  }
+
   /* ------------------------------------------------------------------------
-     View 1: Home / Chapter Library
+     View 1: Home / Chapter Library (Ultra-Minimalist Copy + Info Toggletips)
      ------------------------------------------------------------------------ */
 
   function renderHomeView(container) {
-    const tests = state.manifest?.available_tests || [];
+    const tests = (state.manifest?.available_tests || []).toSorted((a, b) => a.chapter - b.chapter);
     const history = getHistory();
-    const completedChapters = Object.values(history).filter((h) => h.percentage >= 70).length;
+    const completedChapters = Object.values(history).filter((h) => h.percentage >= 75).length;
     const totalQuestionsAvailable = tests.reduce((acc, t) => acc + (t.question_count || 30), 0);
 
     const cardsHtml = tests
@@ -825,77 +1192,104 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
 
         let statusChip = `<span class="score-chip">30 Questions</span>`;
         if (hasInProgress) {
-          statusChip = `<span class="score-chip" style="background:var(--md-primary-container);color:var(--md-on-primary-container);">In Progress</span>`;
+          statusChip = `<span class="score-chip in-progress">In Progress</span>`;
         } else if (h) {
-          statusChip = `<span class="score-chip ${isPassed ? "passed" : ""}">Best: ${h.bestPct}%</span>`;
+          statusChip = `<span class="score-chip ${isPassed ? "passed" : ""}">${isPassed ? "✓ " : ""}Best: ${h.bestPct}%</span>`;
         }
 
+        const chapTip = renderInfoTip(
+          `tip-ch-${t.chapter}`,
+          `Chapter ${t.chapter} topics`,
+          t.subtitle || `30 interactive questions covering Chapter ${t.chapter}.`
+        );
+
         return `
-          <button class="chapter-card ${isPassed ? "completed" : ""}" type="button" data-chapter="${t.chapter}" id="chapter-card-${t.chapter}">
+          <div class="chapter-card ${isPassed ? "completed" : ""}" role="button" tabindex="0" data-chapter="${t.chapter}" id="chapter-card-${t.chapter}">
             <div class="chapter-card-left">
               <div class="chapter-num">${String(t.chapter).padStart(2, "0")}</div>
               <div class="chapter-meta">
-                <div class="chapter-part">${escapeHtml(t.part || "Clean Architecture")} · Released ${escapeHtml(t.released_on || "Today")}</div>
-                <h2 class="chapter-name">Chapter ${t.chapter}: ${escapeHtml(t.title)}</h2>
-                <p class="chapter-desc">${escapeHtml(t.subtitle || "")}</p>
+                <div class="chapter-part">${escapeHtml(t.part || "Clean Architecture")} · ${escapeHtml(t.released_on || "Today")}</div>
+                <div class="inline-with-tip">
+                  <h2 class="chapter-name">Chapter ${t.chapter}: ${escapeHtml(t.title)}</h2>
+                  ${chapTip}
+                </div>
               </div>
             </div>
             <div class="chapter-card-right">
               ${statusChip}
-              <svg class="chevron-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <svg class="chevron-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <polyline points="9 18 15 12 9 6"></polyline>
               </svg>
             </div>
-          </button>
+          </div>
         `;
       })
       .join("");
 
+    const overviewTip = renderInfoTip(
+      "tip-home-overview",
+      "How the platform works",
+      "Two chapters unlock daily at 7:00 a.m. WAT.\n\nEach test has 30 interactive questions across 11 formats (MCQs with per-option explanations, spot-the-flaw, sequence puzzles, matching, triage buckets, claim audits, live JavaScript labs, and Gemini AI own-words grading)."
+    );
+
     container.innerHTML = `
-      <section class="view-fade">
+      <section>
         <div class="home-header">
-          <p class="home-eyebrow">Daily Architectural Mastery · Robert C. Martin</p>
-          <h1 class="home-title">Clean Architecture Assessment Lab</h1>
-          <p class="home-subtitle">
-            Two chapters unlocked every morning at 7:00 a.m. WAT. Each chapter features 30 interactive questions across 10 cognitive formats—using JavaScript for all code syntax and Gemini AI for evaluating your explanations.
-          </p>
+          <p class="home-eyebrow">Clean Architecture · Robert C. Martin</p>
+          <h1 class="home-title">Daily Mastery</h1>
+          <div class="inline-with-tip">
+            <p class="home-subtitle">2 chapters daily · 30 interactive questions each · JS &amp; AI graded</p>
+            ${overviewTip}
+          </div>
           <div class="home-stats-strip">
             <div class="stat-item">
               <span class="stat-value">${tests.length} / ${state.manifest?.total_book_chapters || 34}</span>
-              <span class="stat-label">Chapters Unlocked</span>
+              <span class="stat-label">Unlocked</span>
             </div>
             <div class="stat-item">
               <span class="stat-value">${totalQuestionsAvailable}</span>
-              <span class="stat-label">Interactive Questions</span>
+              <span class="stat-label">Questions</span>
             </div>
             <div class="stat-item">
               <span class="stat-value">${completedChapters}</span>
-              <span class="stat-label">Chapters Mastered (≥75%)</span>
+              <span class="stat-label">Mastered</span>
             </div>
             <div class="stat-item">
-              <span class="stat-value">${getGeminiKey() ? "Connected" : "Optional"}</span>
-              <span class="stat-label">Gemini AI Evaluator</span>
+              <span id="home-api-stat-val" class="stat-value">${getGeminiKey() ? "Active" : "Optional"}</span>
+              <span class="stat-label">AI Grader</span>
             </div>
           </div>
         </div>
 
+        <p class="section-kicker">Available Chapters</p>
         <div class="chapter-list">
           ${cardsHtml}
         </div>
       </section>
     `;
 
-    container.querySelectorAll(".chapter-card").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        const chapNum = parseInt(btn.getAttribute("data-chapter"), 10);
+    container.querySelectorAll(".chapter-card").forEach((card) => {
+      const openCard = async () => {
+        const chapNum = parseInt(card.getAttribute("data-chapter"), 10);
         const meta = tests.find((x) => x.chapter === chapNum);
         if (meta) await openChapterSetup(meta);
+      };
+      card.addEventListener("click", (e) => {
+        if (e.target.closest(".info-tip-trigger, .info-tip-popover")) return;
+        openCard();
+      });
+      card.addEventListener("keydown", (e) => {
+        if (e.target.closest(".info-tip-trigger, .info-tip-popover")) return;
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openCard();
+        }
       });
     });
   }
 
   /* ------------------------------------------------------------------------
-     View 2: Mode Setup (Study Mode vs. Test Mode + Custom Timer)
+     View 2: Mode Setup (Concise Cards + Hover Info Icons)
      ------------------------------------------------------------------------ */
 
   function renderSetupView(container) {
@@ -907,91 +1301,106 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
     const resumeHtml =
       saved && !saved.submitted
         ? `
-        <div class="resume-banner">
+        <div id="resume-session-banner" class="resume-banner">
           <div>
-            <strong>Unfinished ${saved.mode === "study" ? "Study" : "Test"} Session Found</strong>
-            <div>Question ${saved.currentIndex + 1} of ${test.questions.length}</div>
+            <strong>${saved.mode === "study" ? "Study" : "Test"} in progress</strong> · Q${saved.currentIndex + 1}/${test.questions.length}
           </div>
           <div style="display:flex;gap:8px;">
             <button id="discard-saved-btn" class="btn btn-text btn-sm" type="button">Discard</button>
-            <button id="resume-saved-btn" class="btn btn-filled btn-sm" type="button">Resume</button>
+            <button id="resume-saved-btn" class="btn btn-filled glimmer-btn btn-sm" type="button">Resume</button>
           </div>
         </div>
       `
         : "";
 
+    const chapOverviewTip = renderInfoTip(
+      "tip-setup-chapter",
+      "Chapter overview",
+      test.description || test.subtitle || ""
+    );
+
+    const studyTip = renderInfoTip(
+      "tip-mode-study",
+      "Study Mode details",
+      "Instant green/red feedback after every answer. Reveals why every right and wrong MCQ choice is right or wrong, runs JS unit tests live, and gives instant Gemini AI critiques."
+    );
+
+    const testTip = renderInfoTip(
+      "tip-mode-test",
+      "Test Mode details",
+      "Timed exam with your chosen duration. Answers and explanations stay hidden until submission or 00:00, followed by batch AI grading and a complete review."
+    );
+
     container.innerHTML = `
-      <section class="setup-shell view-fade">
+      <section class="setup-shell">
         <button id="setup-back-btn" class="back-link" type="button">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-          All Chapters
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          Chapters
         </button>
 
         <div class="setup-card">
           ${resumeHtml}
           <div class="setup-chapter-tag">${escapeHtml(test.part)} · Chapter ${test.chapter}</div>
-          <h1 class="setup-title">${escapeHtml(test.title)}</h1>
-          <p class="setup-summary">${escapeHtml(test.description || "")}</p>
-
-          <div class="mode-grid" role="radiogroup" aria-label="Quiz Mode">
-            <button id="select-study-mode" class="mode-option ${mode === "study" ? "selected" : ""}" type="button">
-              <div class="mode-option-head">
-                <span class="mode-option-title">Study Mode</span>
-                <span class="radio-ring"></span>
-              </div>
-              <p class="mode-option-desc">
-                Immediate green/red feedback after every question. See why every right and wrong MCQ choice is right or wrong, run JS tests live, and get instant AI feedback.
-              </p>
-            </button>
-
-            <button id="select-test-mode" class="mode-option ${mode === "test" ? "selected" : ""}" type="button">
-              <div class="mode-option-head">
-                <span class="mode-option-title">Test Mode</span>
-                <span class="radio-ring"></span>
-              </div>
-              <p class="mode-option-desc">
-                Timed examination with custom duration. Answers and explanations stay locked until you submit (or timer hits 00:00), followed by a complete diagnostic breakdown.
-              </p>
-            </button>
+          <div class="title-with-tip" style="margin-block-end:26px;">
+            <h1 class="setup-title" style="margin:0;">${escapeHtml(test.title)}</h1>
+            ${chapOverviewTip}
           </div>
 
-          ${
-            mode === "test"
-              ? `
-            <div class="timer-panel">
-              <span class="timer-panel-label">Choose Exam Duration (Minutes)</span>
-              <div class="timer-chips">
-                ${[20, 30, 45, 60, 90]
-                  .map(
-                    (m) => `
-                  <button type="button" class="chip timer-preset-chip ${mins === m && !state.setupConfig.customMinutes ? "selected" : ""}" data-min="${m}">
-                    ${m} min
-                  </button>
-                `
-                  )
-                  .join("")}
-                <input
-                  id="custom-timer-input"
-                  class="custom-min-input"
-                  type="number"
-                  min="1"
-                  max="240"
-                  placeholder="Custom"
-                  value="${escapeHtml(state.setupConfig.customMinutes)}"
-                  aria-label="Custom minutes"
-                />
+          <div class="mode-grid" role="radiogroup" aria-label="Quiz Mode">
+            <div id="select-study-mode" class="mode-option ${mode === "study" ? "selected" : ""}" role="radio" tabindex="0" aria-checked="${mode === "study"}">
+              <div class="mode-option-head">
+                <span class="inline-with-tip">
+                  <span class="mode-option-title">Study Mode</span>
+                  ${studyTip}
+                </span>
+                <span class="radio-ring" aria-hidden="true"></span>
               </div>
+              <p class="mode-option-desc">Instant feedback &amp; explanations</p>
             </div>
-          `
-              : ""
-          }
+
+            <div id="select-test-mode" class="mode-option ${mode === "test" ? "selected" : ""}" role="radio" tabindex="0" aria-checked="${mode === "test"}">
+              <div class="mode-option-head">
+                <span class="inline-with-tip">
+                  <span class="mode-option-title">Test Mode</span>
+                  ${testTip}
+                </span>
+                <span class="radio-ring" aria-hidden="true"></span>
+              </div>
+              <p class="mode-option-desc">Timed exam · review at end</p>
+            </div>
+          </div>
+
+          <div id="setup-timer-panel" class="timer-panel ${mode === "test" ? "" : "hidden"}">
+            <span class="timer-panel-label">Duration</span>
+            <div class="timer-chips">
+              ${[20, 30, 45, 60, 90]
+                .map(
+                  (m) => `
+                <button type="button" class="chip timer-preset-chip ${mins === m && !state.setupConfig.customMinutes ? "selected" : ""}" data-min="${m}">
+                  ${m}m
+                </button>
+              `
+                )
+                .join("")}
+              <input
+                id="custom-timer-input"
+                class="custom-min-input"
+                type="number"
+                min="1"
+                max="240"
+                placeholder="Custom"
+                value="${escapeHtml(state.setupConfig.customMinutes)}"
+                aria-label="Custom minutes"
+              />
+            </div>
+          </div>
 
           <div class="setup-footer">
             <span style="font-size:13px;color:var(--md-on-surface-variant);">
-              30 Questions · 10 Interactive Formats · JavaScript Syntax
+              30 Questions · JavaScript
             </span>
-            <button id="launch-quiz-btn" class="btn btn-filled" type="button">
-              Start ${mode === "study" ? "Study Session" : `Timed Test (${mins}m)`}
+            <button id="launch-quiz-btn" class="btn btn-filled glimmer-btn" type="button">
+              ${mode === "study" ? "Start Study" : `Start Test (${mins}m)`}
             </button>
           </div>
         </div>
@@ -1000,8 +1409,10 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
 
     document.getElementById("setup-back-btn").addEventListener("click", () => {
       window.location.hash = "";
-      state.view = "home";
-      render();
+      navigateWithTransition(() => {
+        state.view = "home";
+        render();
+      }, "backward");
     });
 
     if (saved && !saved.submitted) {
@@ -1010,25 +1421,59 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
       });
       document.getElementById("discard-saved-btn").addEventListener("click", () => {
         clearSavedSession(test.chapter);
-        render();
+        document.getElementById("resume-session-banner")?.remove();
       });
     }
 
-    document.getElementById("select-study-mode").addEventListener("click", () => {
-      state.setupConfig.mode = "study";
-      render();
+    const studyBtn = document.getElementById("select-study-mode");
+    const testBtn = document.getElementById("select-test-mode");
+    const timerPanel = document.getElementById("setup-timer-panel");
+    const launchBtn = document.getElementById("launch-quiz-btn");
+
+    const syncSetupUiInPlace = () => {
+      const isStudy = state.setupConfig.mode === "study";
+      studyBtn.classList.toggle("selected", isStudy);
+      studyBtn.setAttribute("aria-checked", String(isStudy));
+      testBtn.classList.toggle("selected", !isStudy);
+      testBtn.setAttribute("aria-checked", String(!isStudy));
+      timerPanel.classList.toggle("hidden", isStudy);
+      launchBtn.textContent = isStudy
+        ? "Start Study"
+        : `Start Test (${state.setupConfig.timerMinutes}m)`;
+    };
+
+    const pickMode = (targetMode) => (e) => {
+      if (e.target.closest(".info-tip-trigger, .info-tip-popover")) return;
+      state.setupConfig.mode = targetMode;
+      syncSetupUiInPlace();
+    };
+
+    studyBtn.addEventListener("click", pickMode("study"));
+    studyBtn.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        pickMode("study")(e);
+      }
     });
 
-    document.getElementById("select-test-mode").addEventListener("click", () => {
-      state.setupConfig.mode = "test";
-      render();
+    testBtn.addEventListener("click", pickMode("test"));
+    testBtn.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        pickMode("test")(e);
+      }
     });
 
     container.querySelectorAll(".timer-preset-chip").forEach((chip) => {
       chip.addEventListener("click", () => {
         state.setupConfig.timerMinutes = parseInt(chip.getAttribute("data-min"), 10);
         state.setupConfig.customMinutes = "";
-        render();
+        const customInput = document.getElementById("custom-timer-input");
+        if (customInput) customInput.value = "";
+        container.querySelectorAll(".timer-preset-chip").forEach((c) => {
+          c.classList.toggle("selected", c === chip);
+        });
+        syncSetupUiInPlace();
       });
     });
 
@@ -1039,32 +1484,54 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
         state.setupConfig.customMinutes = customInput.value;
         if (!isNaN(val) && val > 0) {
           state.setupConfig.timerMinutes = Math.min(240, val);
-          const launchBtn = document.getElementById("launch-quiz-btn");
-          if (launchBtn) {
-            launchBtn.textContent = `Start Timed Test (${state.setupConfig.timerMinutes}m)`;
-          }
+          container.querySelectorAll(".timer-preset-chip").forEach((c) => c.classList.remove("selected"));
+          syncSetupUiInPlace();
         }
       });
     }
 
-    document.getElementById("launch-quiz-btn").addEventListener("click", () => {
+    launchBtn.addEventListener("click", () => {
       startNewSession(state.setupConfig.mode, state.setupConfig.timerMinutes);
     });
   }
 
   /* ------------------------------------------------------------------------
      View 3: One-Question-at-a-Time Focus Workspace
+     (Minimalist Prompt + Hover/Click ⓘ Info Icon for Instructions & Context)
      ------------------------------------------------------------------------ */
+
+  function buildQuestionInfoPopupText(q) {
+    const parts = [];
+    if (q.context) parts.push(q.context);
+    if (q.instruction) parts.push(q.instruction);
+    if (parts.length === 0) {
+      const defaults = {
+        mcq_single: "Choose the single best option.",
+        mcq_multi: "Select all matching options, then check.",
+        spot_flaw: "Click the flawed line(s), then check.",
+        cloze_bank: "Click a blank, then pick a word from the bank.",
+        cloze_typed: "Type the missing term into each blank.",
+        order_steps: "Drag rows or use ↑ / ↓ arrows to reorder.",
+        match_pairs: "Select an item on the left, then pair it on the right.",
+        classify_buckets: "Click an item, then click its target bucket.",
+        claim_audit: "Choose a verdict and defend it in your own words.",
+        free_response: "Explain clearly in your own words.",
+        js_code: "Write JavaScript and run assertions to verify.",
+      };
+      if (defaults[q.type]) parts.push(defaults[q.type]);
+    }
+    return parts.join("\n\n");
+  }
 
   function renderQuizView(container) {
     if (state.isGradingBatch) {
       container.innerHTML = `
-        <section class="setup-shell view-fade" style="text-align:center;padding-top:64px;">
+        <section class="setup-shell" style="text-align:center;padding-block-start:64px;">
           <div class="setup-card">
-            <div class="spinner" style="width:32px;height:32px;margin-bottom:16px;color:var(--md-primary);"></div>
-            <h2 class="setup-title">Evaluating Your Architectural Reasoning...</h2>
-            <p class="setup-summary" style="margin-bottom:0;">
-              Grading all 30 questions, running JavaScript assertions, and generating feedback on your open-ended responses.
+            <div class="spinner" style="width:32px;height:32px;margin-block-end:16px;color:var(--md-primary);"></div>
+            <h1 class="setup-title">Grading Quiz…</h1>
+            <p class="setup-summary" style="margin-block-end:0;">
+              Running JavaScript tests and evaluating written responses.
             </p>
           </div>
         </section>
@@ -1082,85 +1549,156 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
     const isRevealed = isStudy && Boolean(ev);
     const isFlagged = Boolean(sess.flagged[idx]);
 
+    const infoText = buildQuestionInfoPopupText(q);
+    const infoTipHtml = renderInfoTip(
+      `tip-q-${idx}`,
+      "Question instructions and details",
+      infoText
+    );
+
+    // For coding labs, keep a short inline nudge so the user knows exact spec lives in ⓘ
+    const compactCodeHint =
+      q.type === "js_code" && q.instruction
+        ? `<p class="q-hint" style="margin-block-end:16px;">Hover or click <strong>i</strong> above for full function specification &amp; return shape.</p>`
+        : "";
+
     container.innerHTML = `
-      <section class="question-stage view-fade">
+      <section class="question-stage">
         <div class="q-meta-row">
           <div class="q-badges">
-            <span class="q-index-badge">Question ${idx + 1} of ${test.questions.length}</span>
+            <span class="q-index-badge">Q${idx + 1} / ${test.questions.length}</span>
             <span class="q-type-badge">${escapeHtml(TYPE_LABELS[q.type] || q.type)}</span>
             ${q.bloom ? `<span class="q-bloom-badge">· ${escapeHtml(q.bloom)}</span>` : ""}
           </div>
-          <button id="toggle-flag-btn" class="flag-btn ${isFlagged ? "flagged" : ""}" type="button">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="${isFlagged ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>
-            ${isFlagged ? "Flagged" : "Flag"}
+          <button id="toggle-flag-btn" class="flag-btn ${isFlagged ? "flagged" : ""}" type="button" aria-pressed="${isFlagged}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="${isFlagged ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>
+            <span id="flag-btn-label">${isFlagged ? "Flagged" : "Flag"}</span>
           </button>
         </div>
 
         <article class="q-card">
-          ${q.context ? `<div class="q-context">${escapeHtml(q.context)}</div>` : ""}
-          <h1 class="q-prompt">${escapeHtml(q.prompt)}</h1>
-          ${q.instruction ? `<p class="q-hint">${escapeHtml(q.instruction)}</p>` : `<div style="height:14px;"></div>`}
+          <div class="prompt-header-row">
+            <h1 id="active-question-heading" class="q-prompt" tabindex="-1">${escapeHtml(q.prompt)}</h1>
+            ${infoTipHtml}
+          </div>
+          ${compactCodeHint}
           ${q.code_snippet ? `<pre class="code-block"><code>${escapeHtml(q.code_snippet)}</code></pre>` : ""}
 
           <div id="q-interactive-mount">
             ${renderQuestionBody(q, idx, ans, ev, isRevealed)}
           </div>
 
-          ${isRevealed ? renderFeedbackPanel(q, ev) : ""}
+          <div id="q-feedback-mount">
+            ${isRevealed ? renderFeedbackPanel(q, ev) : ""}
+          </div>
 
-          <div class="q-footer">
-            <div class="q-footer-left">
-              <button id="prev-q-btn" class="btn btn-outlined" type="button" ${idx === 0 ? "disabled" : ""}>
-                Previous
-              </button>
-            </div>
-
-            <div class="q-footer-right">
-              ${
-                isStudy && !isRevealed && q.type !== "mcq_single"
-                  ? `<button id="check-answer-btn" class="btn btn-tonal" type="button">
-                      ${q.type === "js_code" ? "Run Tests & Evaluate" : "Check Answer"}
-                    </button>`
-                  : ""
-              }
-              ${
-                !isStudy && q.type === "js_code"
-                  ? `<button id="dry-run-js-btn" class="btn btn-tonal" type="button">Run Syntax Check</button>`
-                  : ""
-              }
-              ${
-                idx < test.questions.length - 1
-                  ? `<button id="next-q-btn" class="btn btn-filled" type="button">Next Question</button>`
-                  : `<button id="submit-quiz-btn" class="btn btn-filled" type="button">Finish &amp; Submit Quiz</button>`
-              }
-            </div>
+          <div id="q-footer-mount">
+            ${renderQuestionFooter(q, idx, test.questions.length, isStudy, isRevealed)}
           </div>
         </article>
 
-        <div class="nav-strip-wrap">
-          <div class="nav-strip-label">
-            <span>Question Navigator</span>
-            <button id="early-submit-btn" class="btn btn-text btn-sm" type="button">Submit Full Quiz</button>
+        <details id="nav-disclosure-details" class="nav-disclosure" ${state.navDrawerOpen ? "open" : ""}>
+          <summary class="nav-disclosure-summary">
+            <span>Questions (${idx + 1} / ${test.questions.length})</span>
+            <span style="color:var(--md-primary);">Grid ▾</span>
+          </summary>
+          <div class="nav-dots" id="nav-dots-mount">
+            ${renderNavDots(test.questions, sess, idx, isStudy)}
           </div>
-          <div class="nav-dots">
-            ${test.questions
-              .map((item, i) => {
-                const itemEv = sess.evaluations[i];
-                const hasAns = isAnswerProvided(item, sess.answers[i]);
-                let cls = "nav-dot";
-                if (i === idx) cls += " current";
-                else if (isStudy && itemEv) cls += ` ${itemEv.status === "correct" ? "correct" : "wrong"}`;
-                else if (hasAns) cls += " answered";
-                if (sess.flagged[i]) cls += " flagged";
-                return `<button type="button" class="${cls}" data-jump="${i}" aria-label="Go to question ${i + 1}">${i + 1}</button>`;
-              })
-              .join("")}
+          <div style="margin-block-start:12px;display:flex;justify-content:flex-end;">
+            <button id="early-submit-btn" class="btn btn-text btn-sm" type="button">Submit Quiz</button>
           </div>
-        </div>
+        </details>
       </section>
     `;
 
-    bindQuestionEvents(q, idx, isRevealed);
+    bindStageShellEvents();
+    bindInteractiveMountEvents(q, idx, isRevealed);
+    bindFooterEvents(q, idx, isRevealed);
+  }
+
+  function renderQuestionFooter(q, idx, totalQuestions, isStudy, isRevealed) {
+    return `
+      <div class="q-footer">
+        <div class="q-footer-left">
+          <button id="prev-q-btn" class="btn btn-outlined glimmer-btn" type="button" ${idx === 0 ? "disabled" : ""}>
+            ← Back
+          </button>
+        </div>
+
+        <div class="q-footer-right">
+          ${
+            isStudy && !isRevealed && q.type !== "mcq_single"
+              ? `<button id="check-answer-btn" class="btn btn-tonal glimmer-btn" type="button">
+                  ${q.type === "js_code" ? "Run Tests" : "Check"}
+                </button>`
+              : ""
+          }
+          ${
+            !isStudy && q.type === "js_code"
+              ? `<button id="dry-run-js-btn" class="btn btn-tonal glimmer-btn" type="button">Run Tests</button>`
+              : ""
+          }
+          ${
+            idx < totalQuestions - 1
+              ? `<button id="next-q-btn" class="btn btn-filled glimmer-btn" type="button">Next →</button>`
+              : `<button id="submit-quiz-btn" class="btn btn-filled glimmer-btn" type="button">Submit</button>`
+          }
+        </div>
+      </div>
+    `;
+  }
+
+  function renderNavDots(questions, sess, currentIdx, isStudy) {
+    return questions
+      .map((item, i) => {
+        const itemEv = sess.evaluations[i];
+        const hasAns = isAnswerProvided(item, sess.answers[i]);
+        let cls = "nav-dot";
+        if (i === currentIdx) cls += " current";
+        else if (isStudy && itemEv) cls += ` ${itemEv.status === "correct" ? "correct" : "wrong"}`;
+        else if (hasAns) cls += " answered";
+        if (sess.flagged[i]) cls += " flagged";
+        return `<button type="button" class="${cls}" data-jump="${i}" aria-label="Go to question ${i + 1}">${i + 1}</button>`;
+      })
+      .join("");
+  }
+
+  /**
+   * Surgical in-place update for within-question interactions.
+   * Prevents recreating the question card or re-triggering page transitions.
+   */
+  function updateQuestionMountInPlace() {
+    const test = state.currentTest;
+    const sess = state.session;
+    const idx = sess.currentIndex;
+    const q = test.questions[idx];
+    const ans = sess.answers[idx];
+    const ev = sess.evaluations[idx];
+    const isStudy = sess.mode === "study";
+    const isRevealed = isStudy && Boolean(ev);
+
+    const mount = document.getElementById("q-interactive-mount");
+    const feedbackMount = document.getElementById("q-feedback-mount");
+    const footerMount = document.getElementById("q-footer-mount");
+    const navDotsMount = document.getElementById("nav-dots-mount");
+
+    if (mount) {
+      mount.innerHTML = renderQuestionBody(q, idx, ans, ev, isRevealed);
+      bindInteractiveMountEvents(q, idx, isRevealed);
+    }
+    if (feedbackMount) {
+      feedbackMount.innerHTML = isRevealed ? renderFeedbackPanel(q, ev) : "";
+    }
+    if (footerMount) {
+      footerMount.innerHTML = renderQuestionFooter(q, idx, test.questions.length, isStudy, isRevealed);
+      bindFooterEvents(q, idx, isRevealed);
+    }
+    if (navDotsMount) {
+      navDotsMount.innerHTML = renderNavDots(test.questions, sess, idx, isStudy);
+      bindNavDotsEvents();
+    }
+    updateTopBarCountInPlace();
   }
 
   /* ------------------------------------------------------------------------
@@ -1199,7 +1737,7 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
   function renderMcqSingle(q, ans, isRevealed) {
     const letters = ["A", "B", "C", "D", "E", "F"];
     return `
-      <div class="mcq-list" role="radiogroup">
+      <div class="mcq-list" role="radiogroup" aria-label="Multiple choice options">
         ${q.options
           .map((opt, i) => {
             const isSelected = ans === i;
@@ -1210,10 +1748,10 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
             if (isRevealed) {
               if (isRight) {
                 cls += isSelected ? " correct" : " revealed-correct";
-                statusTag = `<span class="mcq-status-tag is-correct">${isSelected ? "Correct Choice" : "Correct Answer"}</span>`;
+                statusTag = `<span class="mcq-status-tag is-correct">✓ ${isSelected ? "Correct Choice" : "Correct Answer"}</span>`;
               } else if (isSelected) {
                 cls += " wrong";
-                statusTag = `<span class="mcq-status-tag is-wrong">Your Pick · Incorrect</span>`;
+                statusTag = `<span class="mcq-status-tag is-wrong">✕ Your Pick · Incorrect</span>`;
               }
             } else if (isSelected) {
               cls += " selected";
@@ -1221,13 +1759,13 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
 
             const expHtml = isRevealed
               ? `<div class="mcq-explanation">
-                  <strong>${isRight ? "Why this is right:" : "Why this is wrong:"}</strong>
+                  <strong>${isRight ? "✓ Why this is right:" : "✕ Why this is wrong:"}</strong>
                   ${escapeHtml(opt.explanation)}
                 </div>`
               : "";
 
             return `
-              <button type="button" class="${cls}" data-mcq-idx="${i}">
+              <button type="button" class="${cls}" data-mcq-idx="${i}" role="radio" aria-checked="${isSelected}">
                 <div class="mcq-option-row">
                   <span class="mcq-key">${letters[i] || i + 1}</span>
                   <span class="mcq-label">${escapeHtml(opt.text)}</span>
@@ -1248,7 +1786,7 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
     const letters = ["A", "B", "C", "D", "E", "F"];
 
     return `
-      <div class="mcq-list">
+      <div class="mcq-list" role="group" aria-label="Multi-select options">
         ${q.options
           .map((opt, i) => {
             const isSelected = selected.has(i);
@@ -1259,13 +1797,13 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
             if (isRevealed) {
               if (isRight && isSelected) {
                 cls += " correct";
-                statusTag = `<span class="mcq-status-tag is-correct">Selected · Correct</span>`;
+                statusTag = `<span class="mcq-status-tag is-correct">✓ Selected · Correct</span>`;
               } else if (isRight && !isSelected) {
                 cls += " revealed-correct";
-                statusTag = `<span class="mcq-status-tag is-correct">Missed · Correct</span>`;
+                statusTag = `<span class="mcq-status-tag is-correct">✓ Missed · Correct</span>`;
               } else if (!isRight && isSelected) {
                 cls += " wrong";
-                statusTag = `<span class="mcq-status-tag is-wrong">Selected · Wrong</span>`;
+                statusTag = `<span class="mcq-status-tag is-wrong">✕ Selected · Wrong</span>`;
               }
             } else if (isSelected) {
               cls += " selected";
@@ -1273,13 +1811,13 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
 
             const expHtml = isRevealed
               ? `<div class="mcq-explanation">
-                  <strong>${isRight ? "Why this is right:" : "Why this is wrong:"}</strong>
+                  <strong>${isRight ? "✓ Why this is right:" : "✕ Why this is wrong:"}</strong>
                   ${escapeHtml(opt.explanation)}
                 </div>`
               : "";
 
             return `
-              <button type="button" class="${cls}" data-multi-idx="${i}" ${isRevealed ? "disabled" : ""}>
+              <button type="button" class="${cls}" data-multi-idx="${i}" aria-pressed="${isSelected}" ${isRevealed ? "disabled" : ""}>
                 <div class="mcq-option-row">
                   <span class="mcq-key">${letters[i] || i + 1}</span>
                   <span class="mcq-label">${escapeHtml(opt.text)}</span>
@@ -1318,11 +1856,11 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
 
             const noteHtml =
               isRevealed && (isFlaw || isSelected) && note
-                ? `<div class="flaw-line-note"><strong>${isFlaw ? "Flaw Analysis:" : "Clean Line:"}</strong> ${escapeHtml(note)}</div>`
+                ? `<div class="flaw-line-note"><strong>${isFlaw ? "✓ Flaw Identified:" : "✕ Clean Line:"}</strong> ${escapeHtml(note)}</div>`
                 : "";
 
             return `
-              <button type="button" class="${cls}" data-flaw-idx="${i}" ${isRevealed ? "disabled" : ""}>
+              <button type="button" class="${cls}" data-flaw-idx="${i}" aria-pressed="${isSelected}" ${isRevealed ? "disabled" : ""}>
                 <span class="flaw-line-num">${i + 1}</span>
                 <div class="flaw-line-text">${escapeHtml(text)}${noteHtml}</div>
               </button>
@@ -1348,9 +1886,12 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
         if (val) cls += " filled";
         if (isSlotActive) cls += " active";
       }
-      const label = isRevealed && !ev?.perBlank?.[i]
-        ? `${val || "___"} → ${b.answer}`
-        : val || `Blank #${i + 1}`;
+      const label =
+        isRevealed && !ev?.perBlank?.[i]
+          ? `✕ ${val || "___"} → ✓ ${b.answer}`
+          : isRevealed
+            ? `✓ ${val}`
+            : val || `Blank #${i + 1}`;
       const buttonHtml = `<button type="button" class="${cls}" data-slot-idx="${i}" ${isRevealed ? "disabled" : ""}>${escapeHtml(label)}</button>`;
       htmlPassage = htmlPassage.replace(`{{${i + 1}}}`, buttonHtml);
     });
@@ -1382,10 +1923,10 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
       if (isRevealed) {
         cls += ev?.perBlank?.[i] ? " correct" : " wrong";
       }
-      const inputHtml = `<input type="text" class="${cls}" data-typed-blank="${i}" value="${escapeHtml(val)}" placeholder="${escapeHtml(b.placeholder || `blank #${i + 1}`)}" ${isRevealed ? "disabled" : ""} />`;
+      const inputHtml = `<input type="text" class="${cls}" data-typed-blank="${i}" value="${escapeHtml(val)}" placeholder="${escapeHtml(b.placeholder || `blank #${i + 1}`)}" aria-label="Blank ${i + 1}" ${isRevealed ? "disabled" : ""} />`;
       const correction =
         isRevealed && !ev?.perBlank?.[i]
-          ? `<span style="font-size:13px;font-weight:700;color:var(--md-success);margin-left:4px;">(${escapeHtml(b.answer)})</span>`
+          ? `<span style="font-size:13px;font-weight:700;color:var(--md-success);margin-inline-start:4px;">(✓ ${escapeHtml(b.answer)})</span>`
           : "";
       htmlPassage = htmlPassage.replace(`{{${i + 1}}}`, inputHtml + correction);
     });
@@ -1406,16 +1947,16 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
               cls += isRightPos ? " correct" : " wrong";
             }
             return `
-              <div class="${cls}" draggable="${!isRevealed}" data-order-pos="${pos}">
+              <div class="${cls}" draggable="${!isRevealed}" data-item-id="${itemIdx}">
                 <span class="order-pos">${pos + 1}</span>
                 <span class="order-text">${escapeHtml(text)}</span>
                 ${
                   !isRevealed
                     ? `<div class="order-arrows">
-                        <button type="button" class="order-arrow-btn" data-move-dir="-1" data-pos="${pos}" ${pos === 0 ? "disabled" : ""} aria-label="Move up">↑</button>
-                        <button type="button" class="order-arrow-btn" data-move-dir="1" data-pos="${pos}" ${pos === currentOrder.length - 1 ? "disabled" : ""} aria-label="Move down">↓</button>
+                        <button type="button" class="order-arrow-btn" data-move-dir="-1" data-item-ref="${itemIdx}" ${pos === 0 ? "disabled" : ""} aria-label="Move item up">↑</button>
+                        <button type="button" class="order-arrow-btn" data-move-dir="1" data-item-ref="${itemIdx}" ${pos === currentOrder.length - 1 ? "disabled" : ""} aria-label="Move item down">↓</button>
                       </div>`
-                    : `<span style="font-size:12px;font-weight:700;">${isRightPos ? "✓" : `Should be #${q.correct_order.indexOf(itemIdx) + 1}`}</span>`
+                    : `<span style="font-size:12px;font-weight:700;">${isRightPos ? "✓ Correct Position" : `✕ Should be #${q.correct_order.indexOf(itemIdx) + 1}`}</span>`
                 }
               </div>
             `;
@@ -1445,7 +1986,7 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
                 else if (isPaired) cls += " paired";
               }
               return `
-                <button type="button" class="${cls}" data-match-left="${leftIdx}" ${isRevealed ? "disabled" : ""}>
+                <button type="button" class="${cls}" data-match-left="${leftIdx}" aria-pressed="${isActive}" ${isRevealed ? "disabled" : ""}>
                   <span>${escapeHtml(p.left)}</span>
                   <span class="pair-tag">${leftIdx + 1}</span>
                 </button>
@@ -1459,9 +2000,7 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
           ${rightIndices
             .map((pairIdx) => {
               const p = q.pairs[pairIdx];
-              const matchedLeftKey = Object.keys(mapping).find(
-                (k) => mapping[k] === pairIdx
-              );
+              const matchedLeftKey = Object.keys(mapping).find((k) => mapping[k] === pairIdx);
               const hasMatch = matchedLeftKey !== undefined;
               let cls = "match-card";
               if (isRevealed) {
@@ -1475,7 +2014,7 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
                   <span>${escapeHtml(p.right)}</span>
                   ${
                     hasMatch
-                      ? `<span class="pair-tag">#${Number(matchedLeftKey) + 1}</span>`
+                      ? `<span class="pair-tag">#${Number(matchedLeftKey) + 1}${isRevealed && Number(matchedLeftKey) !== pairIdx ? ` (Should be #${pairIdx + 1})` : ""}</span>`
                       : ""
                   }
                 </button>
@@ -1502,7 +2041,7 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
                 .map((item) => {
                   const isSel = state.activeBucketItem === item.idx && !isRevealed;
                   return `
-                    <button type="button" class="bucket-card-item ${isSel ? "selected" : ""}" data-bucket-item="${item.idx}" ${isRevealed ? "disabled" : ""}>
+                    <button type="button" class="bucket-card-item ${isSel ? "selected" : ""}" data-bucket-item="${item.idx}" aria-pressed="${isSel}" ${isRevealed ? "disabled" : ""}>
                       ${escapeHtml(item.text)}
                     </button>
                   `;
@@ -1538,7 +2077,7 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
                           ${escapeHtml(item.text)}
                           ${
                             isRevealed && item.bucket !== bucketName
-                              ? `<div style="font-size:11.5px;font-weight:700;margin-top:3px;">→ Belongs in: ${escapeHtml(item.bucket)}</div>`
+                              ? `<div style="font-size:11.5px;font-weight:700;margin-block-start:3px;">✕ Belongs in: ${escapeHtml(item.bucket)}</div>`
                               : ""
                           }
                         </button>
@@ -1564,7 +2103,7 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
 
     return `
       <blockquote class="claim-quote">“${escapeHtml(q.claim)}”</blockquote>
-      <div class="verdict-row">
+      <div class="verdict-row" role="radiogroup" aria-label="Claim verdict">
         ${verdicts
           .map((v) => {
             const isSel = current.verdict === v;
@@ -1576,9 +2115,10 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
             } else if (isSel) {
               cls += " selected";
             }
+            const prefix = isRevealed ? (isRight ? "✓ " : isSel ? "✕ " : "") : "";
             return `
-              <button type="button" class="${cls}" data-verdict="${escapeHtml(v)}" ${isRevealed ? "disabled" : ""}>
-                ${escapeHtml(v)}
+              <button type="button" class="${cls}" data-verdict="${escapeHtml(v)}" role="radio" aria-checked="${isSel}" ${isRevealed ? "disabled" : ""}>
+                ${prefix}${escapeHtml(v)}
               </button>
             `;
           })
@@ -1596,6 +2136,7 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
 
   function renderFreeResponse(q, ans, isRevealed) {
     return `
+      <label class="visually-hidden" for="free-response-input">Your written explanation</label>
       <textarea
         id="free-response-input"
         class="text-response"
@@ -1610,7 +2151,7 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
       .map(
         (r) => `
         <div class="js-test-row ${r.passed ? "pass" : "fail"}">
-          <span>${r.passed ? "✓ PASS" : "✗ FAIL"} · ${escapeHtml(r.label)}</span>
+          <span>${r.passed ? "✓ PASS" : "✕ FAIL"} · ${escapeHtml(r.label)}</span>
           <span>Expected: ${escapeHtml(r.expected)} | Got: ${escapeHtml(r.actual)}</span>
         </div>
       `
@@ -1621,8 +2162,9 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
       <div class="code-editor-wrap">
         <div class="code-editor-bar">
           <span>JavaScript (ES2024 Sandbox)</span>
-          <button id="reset-starter-code-btn" class="btn btn-text btn-sm" type="button" style="color:var(--code-fg);min-height:26px;padding:0 8px;">Reset Starter Code</button>
+          <button id="reset-starter-code-btn" class="btn btn-text btn-sm" type="button" style="color:var(--code-fg);min-block-size:26px;padding-inline:8px;">Reset Starter Code</button>
         </div>
+        <label class="visually-hidden" for="js-code-input">JavaScript solution editor</label>
         <textarea
           id="js-code-input"
           class="code-editor"
@@ -1630,16 +2172,16 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
           ${isRevealed ? "disabled" : ""}
         >${escapeHtml(ans ?? q.starter_code ?? "")}</textarea>
       </div>
-      ${testRows ? `<div class="js-test-results">${testRows}</div>` : ""}
+      <div id="js-dry-run-mount">${testRows ? `<div class="js-test-results">${testRows}</div>` : ""}</div>
     `;
   }
 
   function renderFeedbackPanel(q, ev) {
     if (!ev) return "";
     const titles = {
-      correct: "Mastery Confirmed",
-      partial: "Partially Correct — Nuance Needed",
-      wrong: "Misconception Detected",
+      correct: "✓ Mastery Confirmed",
+      partial: "◐ Partially Correct — Nuance Needed",
+      wrong: "✕ Misconception Detected",
     };
 
     const hitsHtml =
@@ -1657,7 +2199,7 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
         ? `
         <div class="model-answer-toggle">
           <strong>Reference Authoritative Answer:</strong>
-          <div style="margin-top:4px;white-space:pre-wrap;">${escapeHtml(q.model_answer)}</div>
+          <div style="margin-block-start:4px;white-space:pre-wrap;">${escapeHtml(q.model_answer)}</div>
         </div>
       `
         : "";
@@ -1666,7 +2208,7 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
       <div class="feedback-box ${ev.status}">
         <div class="feedback-title">
           <span>${titles[ev.status] || "Evaluation"} (${Math.round((ev.score || 0) * 100)}%)</span>
-          ${ev.gradedBy ? `<span style="font-size:12px;font-weight:500;opacity:0.85;">${escapeHtml(ev.gradedBy)}</span>` : ""}
+          ${ev.gradedBy ? `<span style="font-size:12px;font-weight:500;opacity:0.88;">${escapeHtml(ev.gradedBy)}</span>` : ""}
         </div>
         <p class="feedback-body">${escapeHtml(ev.feedback || q.overall_explanation || "")}</p>
         ${hitsHtml}
@@ -1676,21 +2218,64 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
   }
 
   /* ------------------------------------------------------------------------
-     Interactive Event Bindings for the Current Question
+     Event Bindings: Stage Shell, Footer, Navigator & Question Formats
      ------------------------------------------------------------------------ */
 
-  function bindQuestionEvents(q, idx, isRevealed) {
+  function bindStageShellEvents() {
     const sess = state.session;
-    const isStudy = sess.mode === "study";
+    const idx = sess.currentIndex;
 
-    // Flag toggle
-    document.getElementById("toggle-flag-btn").addEventListener("click", () => {
-      sess.flagged[idx] = !sess.flagged[idx];
-      persistSession();
-      render();
+    // Flag button updates in place without re-rendering the stage
+    const flagBtn = document.getElementById("toggle-flag-btn");
+    if (flagBtn) {
+      flagBtn.addEventListener("click", () => {
+        const nextFlag = !sess.flagged[idx];
+        sess.flagged[idx] = nextFlag;
+        persistSession();
+        flagBtn.classList.toggle("flagged", nextFlag);
+        flagBtn.setAttribute("aria-pressed", String(nextFlag));
+        const lbl = document.getElementById("flag-btn-label");
+        if (lbl) lbl.textContent = nextFlag ? "Flagged" : "Flag";
+        const svgPath = flagBtn.querySelector("svg");
+        if (svgPath) svgPath.setAttribute("fill", nextFlag ? "currentColor" : "none");
+        const navDot = document.querySelector(`[data-jump="${idx}"]`);
+        if (navDot) navDot.classList.toggle("flagged", nextFlag);
+      });
+    }
+
+    const detailsEl = document.getElementById("nav-disclosure-details");
+    if (detailsEl) {
+      detailsEl.addEventListener("toggle", () => {
+        state.navDrawerOpen = detailsEl.open;
+      });
+    }
+
+    const earlySubmitBtn = document.getElementById("early-submit-btn");
+    if (earlySubmitBtn) {
+      earlySubmitBtn.addEventListener("click", () => finalizeAndSubmitQuiz(false));
+    }
+
+    bindNavDotsEvents();
+  }
+
+  function bindNavDotsEvents() {
+    const sess = state.session;
+    document.querySelectorAll("[data-jump]").forEach((dot) => {
+      dot.addEventListener("click", () => {
+        const targetIdx = parseInt(dot.getAttribute("data-jump"), 10);
+        if (targetIdx === sess.currentIndex) return;
+        const dir = targetIdx > sess.currentIndex ? "forward" : "backward";
+        sess.currentIndex = targetIdx;
+        resetTransientPickers();
+        persistSession();
+        navigateWithTransition(() => render(), dir, "#active-question-heading");
+      });
     });
+  }
 
-    // Navigation buttons
+  function bindFooterEvents(q, idx, isRevealed) {
+    const sess = state.session;
+
     const prevBtn = document.getElementById("prev-q-btn");
     if (prevBtn) {
       prevBtn.addEventListener("click", () => {
@@ -1698,7 +2283,7 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
           sess.currentIndex--;
           resetTransientPickers();
           persistSession();
-          render();
+          navigateWithTransition(() => render(), "backward", "#active-question-heading");
         }
       });
     }
@@ -1710,7 +2295,7 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
           sess.currentIndex++;
           resetTransientPickers();
           persistSession();
-          render();
+          navigateWithTransition(() => render(), "forward", "#active-question-heading");
         }
       });
     }
@@ -1720,21 +2305,6 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
       submitBtn.addEventListener("click", () => finalizeAndSubmitQuiz(false));
     }
 
-    const earlySubmitBtn = document.getElementById("early-submit-btn");
-    if (earlySubmitBtn) {
-      earlySubmitBtn.addEventListener("click", () => finalizeAndSubmitQuiz(false));
-    }
-
-    document.querySelectorAll("[data-jump]").forEach((dot) => {
-      dot.addEventListener("click", () => {
-        sess.currentIndex = parseInt(dot.getAttribute("data-jump"), 10);
-        resetTransientPickers();
-        persistSession();
-        render();
-      });
-    });
-
-    // Study mode "Check Answer" button
     const checkBtn = document.getElementById("check-answer-btn");
     if (checkBtn) {
       checkBtn.addEventListener("click", async () => {
@@ -1742,21 +2312,74 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
         checkBtn.innerHTML = `<span class="spinner"></span> Evaluating...`;
         await evaluateSingleQuestion(idx);
         persistSession();
-        render();
+        updateQuestionMountInPlace();
+        announceStatus(`Answer evaluated: ${state.session.evaluations[idx]?.status || "done"}`);
       });
     }
 
-    // Test mode JS syntax dry-run
     const dryRunBtn = document.getElementById("dry-run-js-btn");
     if (dryRunBtn) {
       dryRunBtn.addEventListener("click", () => {
         const res = runSandboxedJsTests(q, sess.answers[idx] || "");
-        const passed = res.jsResults.filter((r) => r.passed).length;
-        alert(`JavaScript Test Runner: ${passed}/${res.jsResults.length} assertions passed.`);
+        const dryMount = document.getElementById("js-dry-run-mount");
+        if (dryMount) {
+          dryMount.innerHTML = `<div class="js-test-results">${res.jsResults
+            .map(
+              (r) => `
+              <div class="js-test-row ${r.passed ? "pass" : "fail"}">
+                <span>${r.passed ? "✓ PASS" : "✕ FAIL"} · ${escapeHtml(r.label)}</span>
+                <span>Expected: ${escapeHtml(r.expected)} | Got: ${escapeHtml(r.actual)}</span>
+              </div>
+            `
+            )
+            .join("")}</div>`;
+        }
       });
     }
+  }
 
-    // Format-specific listeners
+  /**
+   * Identity-preserving DOM reorder using Element.prototype.moveBefore()
+   * and scoped/document View Transitions (Modern Web Guidance `dynamic-sort`).
+   */
+  function applyDynamicOrderDomUpdate(listEl, newOrderArray) {
+    const nodeByItemId = new Map();
+    for (const child of listEl.children) {
+      nodeByItemId.set(Number(child.getAttribute("data-item-id")), child);
+    }
+    const orderedNodes = newOrderArray.map((id) => nodeByItemId.get(id)).filter(Boolean);
+
+    const move = Object.hasOwn(Element.prototype, "moveBefore")
+      ? (node) => listEl.moveBefore(node, null)
+      : (node) => listEl.append(node);
+
+    const performReorder = () => {
+      for (const node of orderedNodes) move(node);
+      orderedNodes.forEach((node, pos) => {
+        const posEl = node.querySelector(".order-pos");
+        if (posEl) posEl.textContent = String(pos + 1);
+        const upBtn = node.querySelector('[data-move-dir="-1"]');
+        const downBtn = node.querySelector('[data-move-dir="1"]');
+        if (upBtn) upBtn.disabled = pos === 0;
+        if (downBtn) downBtn.disabled = pos === orderedNodes.length - 1;
+      });
+    };
+
+    if (listEl.startViewTransition) {
+      listEl.startViewTransition(performReorder);
+    } else if (document.startViewTransition) {
+      document.startViewTransition(performReorder);
+    } else {
+      performReorder();
+    }
+
+    announceStatus(`Sequence updated, ${orderedNodes.length} steps ordered.`);
+  }
+
+  function bindInteractiveMountEvents(q, idx, isRevealed) {
+    const sess = state.session;
+    const isStudy = sess.mode === "study";
+
     if (q.type === "mcq_single") {
       document.querySelectorAll("[data-mcq-idx]").forEach((btn) => {
         btn.addEventListener("click", async () => {
@@ -1767,7 +2390,7 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
             await evaluateSingleQuestion(idx);
           }
           persistSession();
-          render();
+          updateQuestionMountInPlace();
         });
       });
     }
@@ -1781,8 +2404,10 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
           if (cur.has(choice)) cur.delete(choice);
           else cur.add(choice);
           sess.answers[idx] = Array.from(cur);
+          btn.classList.toggle("selected", cur.has(choice));
+          btn.setAttribute("aria-pressed", String(cur.has(choice)));
           persistSession();
-          render();
+          updateTopBarCountInPlace();
         });
       });
     }
@@ -1795,13 +2420,20 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
           const cur = new Set(Array.isArray(sess.answers[idx]) ? sess.answers[idx] : []);
           if ((q.flawed_indices || []).length === 1) {
             sess.answers[idx] = [lineIdx];
+            document.querySelectorAll("[data-flaw-idx]").forEach((el) => {
+              const match = el === btn;
+              el.classList.toggle("selected", match);
+              el.setAttribute("aria-pressed", String(match));
+            });
           } else {
             if (cur.has(lineIdx)) cur.delete(lineIdx);
             else cur.add(lineIdx);
             sess.answers[idx] = Array.from(cur);
+            btn.classList.toggle("selected", cur.has(lineIdx));
+            btn.setAttribute("aria-pressed", String(cur.has(lineIdx)));
           }
           persistSession();
-          render();
+          updateTopBarCountInPlace();
         });
       });
     }
@@ -1816,7 +2448,7 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
           }
           state.activeClozeSlot = sIdx;
           persistSession();
-          render();
+          updateQuestionMountInPlace();
         });
       });
 
@@ -1833,7 +2465,7 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
           const nextEmpty = arr.findIndex((v) => !v);
           if (nextEmpty !== -1) state.activeClozeSlot = nextEmpty;
           persistSession();
-          render();
+          updateQuestionMountInPlace();
         });
       });
     }
@@ -1847,35 +2479,40 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
           }
           sess.answers[idx][bIdx] = inp.value;
           persistSession();
+          updateTopBarCountInPlace();
         });
       });
     }
 
     if (q.type === "order_steps") {
-      document.querySelectorAll("[data-move-dir]").forEach((btn) => {
+      const listEl = document.getElementById("order-list-container");
+      if (!listEl) return;
+
+      listEl.querySelectorAll("[data-move-dir]").forEach((btn) => {
         btn.addEventListener("click", () => {
           if (isRevealed) return;
-          const pos = parseInt(btn.getAttribute("data-pos"), 10);
+          const itemId = parseInt(btn.getAttribute("data-item-ref"), 10);
           const dir = parseInt(btn.getAttribute("data-move-dir"), 10);
           const arr = [...(sess.answers[idx] || q.initial_order)];
+          const pos = arr.indexOf(itemId);
           const target = pos + dir;
-          if (target >= 0 && target < arr.length) {
+          if (pos !== -1 && target >= 0 && target < arr.length) {
             [arr[pos], arr[target]] = [arr[target], arr[pos]];
             sess.answers[idx] = arr;
             persistSession();
-            render();
+            applyDynamicOrderDomUpdate(listEl, arr);
           }
         });
       });
 
-      // HTML5 drag and drop reordering
-      document.querySelectorAll("[data-order-pos]").forEach((row) => {
+      listEl.querySelectorAll(".order-item").forEach((row) => {
         row.addEventListener("dragstart", () => {
-          state.dragOrderIdx = parseInt(row.getAttribute("data-order-pos"), 10);
+          state.dragOrderNode = row;
           row.classList.add("dragging");
         });
         row.addEventListener("dragend", () => {
           row.classList.remove("dragging");
+          state.dragOrderNode = null;
         });
         row.addEventListener("dragover", (e) => {
           e.preventDefault();
@@ -1887,16 +2524,18 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
         row.addEventListener("drop", (e) => {
           e.preventDefault();
           row.classList.remove("drag-over");
-          const fromPos = state.dragOrderIdx;
-          const toPos = parseInt(row.getAttribute("data-order-pos"), 10);
-          if (fromPos === null || fromPos === toPos) return;
+          if (!state.dragOrderNode || state.dragOrderNode === row) return;
+          const fromId = parseInt(state.dragOrderNode.getAttribute("data-item-id"), 10);
+          const toId = parseInt(row.getAttribute("data-item-id"), 10);
           const arr = [...(sess.answers[idx] || q.initial_order)];
+          const fromPos = arr.indexOf(fromId);
+          const toPos = arr.indexOf(toId);
+          if (fromPos === -1 || toPos === -1) return;
           const [moved] = arr.splice(fromPos, 1);
           arr.splice(toPos, 0, moved);
           sess.answers[idx] = arr;
-          state.dragOrderIdx = null;
           persistSession();
-          render();
+          applyDynamicOrderDomUpdate(listEl, arr);
         });
       });
     }
@@ -1906,7 +2545,7 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
         btn.addEventListener("click", () => {
           if (isRevealed) return;
           state.activeMatchLeft = parseInt(btn.getAttribute("data-match-left"), 10);
-          render();
+          updateQuestionMountInPlace();
         });
       });
 
@@ -1920,7 +2559,6 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
               : q.pairs.findIndex((_, i) => sess.answers[idx]?.[i] === undefined);
           if (leftIdx === -1 || leftIdx === null) return;
           const map = { ...(sess.answers[idx] || {}) };
-          // Remove any previous left paired to this rightIdx
           Object.keys(map).forEach((k) => {
             if (map[k] === rightIdx) delete map[k];
           });
@@ -1929,7 +2567,7 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
           const nextUnpaired = q.pairs.findIndex((_, i) => map[i] === undefined);
           state.activeMatchLeft = nextUnpaired !== -1 ? nextUnpaired : null;
           persistSession();
-          render();
+          updateQuestionMountInPlace();
         });
       });
     }
@@ -1941,7 +2579,7 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
           if (isRevealed) return;
           const itemIdx = parseInt(btn.getAttribute("data-bucket-item"), 10);
           state.activeBucketItem = state.activeBucketItem === itemIdx ? null : itemIdx;
-          render();
+          updateQuestionMountInPlace();
         });
       });
 
@@ -1955,7 +2593,7 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
           const nextUnassigned = q.items.findIndex((_, i) => map[i] === undefined);
           state.activeBucketItem = nextUnassigned !== -1 ? nextUnassigned : null;
           persistSession();
-          render();
+          updateQuestionMountInPlace();
         });
       });
     }
@@ -1967,8 +2605,13 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
           const v = btn.getAttribute("data-verdict");
           const cur = sess.answers[idx] || { verdict: "", reasoning: "" };
           sess.answers[idx] = { ...cur, verdict: v };
+          document.querySelectorAll("[data-verdict]").forEach((el) => {
+            const match = el === btn;
+            el.classList.toggle("selected", match);
+            el.setAttribute("aria-checked", String(match));
+          });
           persistSession();
-          render();
+          updateTopBarCountInPlace();
         });
       });
       const reasonInput = document.getElementById("claim-reasoning-input");
@@ -1977,6 +2620,7 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
           const cur = sess.answers[idx] || { verdict: "", reasoning: "" };
           sess.answers[idx] = { ...cur, reasoning: reasonInput.value };
           persistSession();
+          updateTopBarCountInPlace();
         });
       }
     }
@@ -1987,6 +2631,7 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
         freeInput.addEventListener("input", () => {
           sess.answers[idx] = freeInput.value;
           persistSession();
+          updateTopBarCountInPlace();
         });
       }
     }
@@ -1997,6 +2642,7 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
         codeInput.addEventListener("input", () => {
           sess.answers[idx] = codeInput.value;
           persistSession();
+          updateTopBarCountInPlace();
         });
       }
       const resetBtn = document.getElementById("reset-starter-code-btn");
@@ -2004,8 +2650,8 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
         resetBtn.addEventListener("click", () => {
           if (isRevealed) return;
           sess.answers[idx] = q.starter_code || "";
+          if (codeInput) codeInput.value = sess.answers[idx];
           persistSession();
-          render();
         });
       }
     }
@@ -2037,57 +2683,71 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
       });
 
     container.innerHTML = `
-      <section class="view-fade">
+      <section>
         <div class="results-hero">
-          <div class="setup-chapter-tag">Chapter ${test.chapter} · ${summary.mode === "study" ? "Study Session" : "Timed Examination"} Complete</div>
-          <div class="results-score-ring ${isPassed ? "passed" : ""}">${summary.percentage}%</div>
-          <h1 class="setup-title" style="margin-bottom:6px;">
-            ${isPassed ? "Architectural Mastery Verified" : "Review Required to Solidify Boundaries"}
+          <div class="setup-chapter-tag">Chapter ${test.chapter} · ${summary.mode === "study" ? "Study" : "Test"}</div>
+          <div class="progress-ring-wrapper">
+            <progress
+              id="results-progress-ring"
+              class="progress-ring ${isPassed ? "passed" : ""}"
+              value="0"
+              max="100"
+              aria-label="Quiz score"
+              aria-valuetext="${summary.percentage}%"
+            ></progress>
+            <div class="progress-ring-content" aria-hidden="true">
+              <span class="progress-ring-pct">${summary.percentage}%</span>
+              <span class="progress-ring-sub">${summary.totalScore}/${summary.totalQuestions}</span>
+            </div>
+          </div>
+          <h1 class="setup-title" style="margin-block-end:6px;">
+            ${isPassed ? "Mastery Verified" : "Needs Review"}
           </h1>
-          <p class="setup-summary" style="margin-bottom:0;">
+          <p class="setup-summary" style="margin-block-end:0;">
             ${
               state.session.autoSubmittedByTimer
-                ? "Time expired — your quiz was automatically submitted and graded."
-                : `You earned ${summary.totalScore} out of ${summary.totalQuestions} points across 30 questions.`
+                ? "Time expired · auto-submitted"
+                : `${summary.correctCount} right · ${summary.partialCount} partial · ${summary.wrongCount} missed`
             }
           </p>
 
           <div class="results-meta-row">
             <div class="stat-item">
-              <span class="stat-value" style="color:var(--md-success);">${summary.correctCount}</span>
-              <span class="stat-label">Mastered</span>
+              <span class="stat-value" style="color:var(--md-success);">✓ ${summary.correctCount}</span>
+              <span class="stat-label">Correct</span>
             </div>
             <div class="stat-item">
-              <span class="stat-value" style="color:var(--md-warning);">${summary.partialCount}</span>
-              <span class="stat-label">Partial Credit</span>
+              <span class="stat-value" style="color:var(--md-warning);">◐ ${summary.partialCount}</span>
+              <span class="stat-label">Partial</span>
             </div>
             <div class="stat-item">
-              <span class="stat-value" style="color:var(--md-error);">${summary.wrongCount}</span>
-              <span class="stat-label">Needs Review</span>
+              <span class="stat-value" style="color:var(--md-error);">✕ ${summary.wrongCount}</span>
+              <span class="stat-label">Missed</span>
             </div>
             <div class="stat-item">
               <span class="stat-value">${formatDuration(summary.elapsedSeconds)}</span>
-              <span class="stat-label">Time Invested</span>
+              <span class="stat-label">Time</span>
             </div>
           </div>
 
           <div style="display:flex;justify-content:center;flex-wrap:wrap;gap:10px;">
-            <button id="results-home-btn" class="btn btn-outlined" type="button">Back to Library</button>
-            <button id="results-retake-btn" class="btn btn-filled" type="button">New Session</button>
+            <button id="results-home-btn" class="btn btn-outlined glimmer-btn" type="button">Library</button>
+            <button id="results-retake-btn" class="btn btn-filled glimmer-btn" type="button">Retake</button>
           </div>
         </div>
 
-        <div class="review-filters">
-          <button type="button" class="chip ${filter === "all" ? "selected" : ""}" data-filter="all">All Questions (30)</button>
-          <button type="button" class="chip ${filter === "wrong" ? "selected" : ""}" data-filter="wrong">Missed &amp; Partial (${summary.wrongCount + summary.partialCount})</button>
-          <button type="button" class="chip ${filter === "ai" ? "selected" : ""}" data-filter="ai">Own-Words &amp; JS Code</button>
+        <div class="review-filters" role="toolbar" aria-label="Filter reviewed questions">
+          <button type="button" class="chip ${filter === "all" ? "selected" : ""}" data-filter="all">All (30)</button>
+          <button type="button" class="chip ${filter === "wrong" ? "selected" : ""}" data-filter="wrong">Missed (${summary.wrongCount + summary.partialCount})</button>
+          <button type="button" class="chip ${filter === "ai" ? "selected" : ""}" data-filter="ai">Written &amp; JS</button>
           <button type="button" class="chip ${filter === "flagged" ? "selected" : ""}" data-filter="flagged">Flagged</button>
         </div>
 
-        <div>
+        <div id="review-list-mount">
           ${filteredIndices
             .map(({ q, i, ev }) => {
               const status = ev?.status || "wrong";
+              const icon = status === "correct" ? "✓" : status === "partial" ? "◐" : "✕";
               return `
                 <article class="review-item">
                   <div class="review-item-head">
@@ -2096,10 +2756,10 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
                       <span class="q-type-badge">${escapeHtml(TYPE_LABELS[q.type] || q.type)}</span>
                     </div>
                     <span class="review-badge ${status}">
-                      ${status === "correct" ? "Correct" : status === "partial" ? "Partial" : "Incorrect"} · ${Math.round((ev?.score || 0) * 100)}%
+                      ${icon} ${status === "correct" ? "Correct" : status === "partial" ? "Partial" : "Missed"} · ${Math.round((ev?.score || 0) * 100)}%
                     </span>
                   </div>
-                  <h3 style="font-size:16.5px;font-weight:600;margin:0 0 12px;">${escapeHtml(q.prompt)}</h3>
+                  <h2 style="font-size:16.5px;font-weight:600;margin:0 0 12px;">${escapeHtml(q.prompt)}</h2>
                   ${q.code_snippet ? `<pre class="code-block"><code>${escapeHtml(q.code_snippet)}</code></pre>` : ""}
                   ${renderQuestionBody(q, i, state.session.answers[i], ev, true)}
                   ${renderFeedbackPanel(q, ev)}
@@ -2111,23 +2771,45 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
       </section>
     `;
 
+    // Sync <progress class="progress-ring"> value with fallback where attr(value type(<number>)) is unsupported
+    const ring = document.getElementById("results-progress-ring");
+    if (ring) {
+      const supportsTypedAttr = window.CSS?.supports?.("width: attr(value type(<number>))");
+      if (!supportsTypedAttr) {
+        const obs = new MutationObserver(() => {
+          ring.style.setProperty("--value", ring.getAttribute("value") || "0");
+        });
+        obs.observe(ring, { attributes: true, attributeFilter: ["value"] });
+      }
+      requestAnimationFrame(() => {
+        ring.setAttribute("value", String(summary.percentage));
+        if (!supportsTypedAttr) {
+          ring.style.setProperty("--value", String(summary.percentage));
+        }
+      });
+    }
+
     document.getElementById("results-home-btn").addEventListener("click", () => {
       clearSavedSession(test.chapter);
       window.location.hash = "";
-      state.view = "home";
-      render();
+      navigateWithTransition(() => {
+        state.view = "home";
+        render();
+      }, "backward");
     });
 
     document.getElementById("results-retake-btn").addEventListener("click", () => {
       clearSavedSession(test.chapter);
-      state.view = "setup";
-      render();
+      navigateWithTransition(() => {
+        state.view = "setup";
+        render();
+      }, "backward");
     });
 
     container.querySelectorAll("[data-filter]").forEach((btn) => {
       btn.addEventListener("click", () => {
         state.reviewFilter = btn.getAttribute("data-filter");
-        render();
+        renderResultsView(container);
       });
     });
   }
