@@ -91,16 +91,17 @@
       <div class="field-group">
         <label class="field-label" for="gemini-model-select">Model</label>
         <select id="gemini-model-select" class="field-input">
-          <option value="gemini-3.8-flash">gemini-3.8-flash (Recommended)</option>
-          <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Fastest · Low Cost)</option>
-          <option value="gemini-3.6-flash">gemini-3.6-flash</option>
+          <option value="gemini-4-neon">gemini-4-neon (High Thinking)</option>
+          <option value="gemini-4-argon">gemini-4-argon</option>
           <option value="gemini-4-hydrogen">gemini-4-hydrogen (General Flagship)</option>
-          <option value="gemini-4-neon">gemini-4-neon (Deep Reasoning)</option>
+          <option value="gemini-3.8-flash">gemini-3.8-flash (Fast · Recommended)</option>
+          <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Fastest · Low Cost)</option>
         </select>
       </div>
       <p id="api-test-feedback" class="modal-desc modal-status-line"></p>
       <form method="dialog" class="modal-actions">
         <button id="clear-api-key-btn" class="btn btn-text" type="button">Clear</button>
+        <button id="test-api-key-btn" class="btn btn-tonal glimmer-btn" type="button">Test Key</button>
         <button id="close-api-modal-btn" class="btn btn-outlined glimmer-btn" type="submit" value="cancel">Cancel</button>
         <button id="save-api-key-btn" class="btn btn-filled glimmer-btn" type="button">Save</button>
       </form>

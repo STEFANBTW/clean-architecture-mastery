@@ -389,20 +389,20 @@
   }
 
   const VALID_GEMINI_MODELS = new Set([
+    "gemini-4-neon",
+    "gemini-4-argon",
+    "gemini-4-hydrogen",
     "gemini-3.8-flash",
     "gemini-3.5-flash-lite",
-    "gemini-3.6-flash",
-    "gemini-4-hydrogen",
-    "gemini-4-neon",
   ]);
 
   function getGeminiModel() {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.GEMINI_MODEL);
       if (saved && VALID_GEMINI_MODELS.has(saved)) return saved;
-      return "gemini-3.8-flash";
+      return "gemini-4-neon";
     } catch {
-      return "gemini-3.8-flash";
+      return "gemini-4-neon";
     }
   }
 
@@ -418,6 +418,7 @@
     const openBtn = document.getElementById("open-api-modal-btn");
     const closeBtn = document.getElementById("close-api-modal-btn");
     const clearBtn = document.getElementById("clear-api-key-btn");
+    const testBtn = document.getElementById("test-api-key-btn");
     const saveBtn = document.getElementById("save-api-key-btn");
     const input = document.getElementById("gemini-key-input");
     const modelSelect = document.getElementById("gemini-model-select");
@@ -427,8 +428,8 @@
       input.value = getGeminiKey();
       modelSelect.value = getGeminiModel();
       feedback.textContent = getGeminiKey()
-        ? "✓ Gemini API key is active in local storage."
-        : "No API key saved yet. Built-in Rubric Analyzer will grade open-ended answers until you add one.";
+        ? `✓ Key saved (${getGeminiModel()}). Click Test Key to verify.`
+        : "No key saved yet. Built-in Rubric Analyzer will grade written answers until you add one.";
     };
 
     openBtn.addEventListener("click", () => {
@@ -467,6 +468,41 @@
           closeTopLayer(dialog);
         }
         pressedOutside = false;
+      });
+    }
+
+    if (testBtn) {
+      testBtn.addEventListener("click", async () => {
+        const key = input.value.trim();
+        const model = modelSelect.value;
+        if (!key) {
+          feedback.textContent = "✕ Enter a Gemini API key first.";
+          return;
+        }
+        testBtn.disabled = true;
+        feedback.textContent = `Testing ${model}…`;
+        try {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
+          const res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            signal: AbortSignal.timeout(15_000),
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: "Reply with OK" }] }],
+            }),
+          });
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            const msg = errData?.error?.message || `HTTP ${res.status}`;
+            feedback.textContent = `✕ Failed (${model}): ${msg}`;
+          } else {
+            feedback.textContent = `✓ Working! Connected to ${model}.`;
+          }
+        } catch (err) {
+          feedback.textContent = `✕ Network/Timeout error: ${err.message}`;
+        } finally {
+          testBtn.disabled = false;
+        }
       });
     }
 

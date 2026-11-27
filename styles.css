@@ -64,71 +64,71 @@
 
 @layer theme {
   :root {
-    /* Tier 1: Light Palette — Bright Pastel Lemon Green (Almost White) */
-    --surface-light: #fafef2;
+    /* Tier 1: Light Palette — Original Deep Teal & Neutral Alabaster */
+    --surface-light: #fbfbfa;
     --surface-lowest-light: #ffffff;
-    --surface-low-light: #f4faea;
-    --surface-container-light: #ebf5d9;
-    --surface-high-light: #e0f0c2;
+    --surface-low-light: #f4f5f3;
+    --surface-container-light: #eceee9;
+    --surface-high-light: #e3e6e1;
 
-    --primary-light: #47630e;
-    --on-primary-light: #fcfff5;
-    --primary-container-light: #e2f5a8;
-    --on-primary-container-light: #1e2d03;
+    --primary-light: #005c6e;
+    --on-primary-light: #ffffff;
+    --primary-container-light: #cde7f0;
+    --on-primary-container-light: #001f26;
 
-    --on-surface-light: #171b13;
-    --on-surface-variant-light: #515a49;
-    --outline-light: #6d7862;
-    --outline-variant-light: #d7e2c1;
+    --on-surface-light: #181c1d;
+    --on-surface-variant-light: #475255;
+    --outline-light: #697376;
+    --outline-variant-light: #d5dcde;
 
-    --glimmer-edge-light: #b8e838;
-    --glimmer-soft-light: #e6fa9e;
+    --glimmer-edge-light: #008ca6;
+    --glimmer-soft-light: #cde7f0;
 
-    /* Tier 1: Dark Palette — Pure Refined Greyscale + Exact Blue Accent from Reference */
-    --surface-dark: #101110;
-    --surface-lowest-dark: #161716;
-    --surface-low-dark: #1c1d1c;
-    --surface-container-dark: #232423;
-    --surface-high-dark: #2c2d2c;
+    /* Tier 1: Dark Palette — Original Obsidian & Cyan-Teal */
+    --surface-dark: #111415;
+    --surface-lowest-dark: #171a1c;
+    --surface-low-dark: #1b1f22;
+    --surface-container-dark: #212629;
+    --surface-high-dark: #2b3135;
 
     --primary-dark: #7cd2e6;
     --on-primary-dark: #003641;
     --primary-container-dark: #004e5d;
     --on-primary-container-dark: #b5ebfa;
 
-    --on-surface-dark: #e8e9e7;
-    --on-surface-variant-dark: #989b96;
-    --outline-dark: #717470;
-    --outline-variant-dark: #2d2f2d;
+    --on-surface-dark: #e6eaec;
+    --on-surface-variant-dark: #9ba8ac;
+    --outline-dark: #849195;
+    --outline-variant-dark: #31393d;
 
     --glimmer-edge-dark: #7cd2e6;
     --glimmer-soft-dark: #1d6d82;
 
-    /* Tier 1: Semantic Feedback Tokens (Harmonized with Lemon-Olive & Greyscale) */
-    --success-light: #226b2a;
-    --success-dark: #88cf7c;
+    /* Tier 1: Semantic Feedback Tokens */
+    --success-light: #146c2e;
+    --success-dark: #6dd58c;
     --on-success-light: #ffffff;
-    --on-success-dark: #0a2a0d;
-    --success-container-light: #e3f4df;
-    --success-container-dark: #1b2c1a;
-    --on-success-container-light: #103814;
-    --on-success-container-dark: #c5edc0;
+    --on-success-dark: #003915;
+    --success-container-light: #e2f3e7;
+    --success-container-dark: #12381e;
+    --on-success-container-light: #093816;
+    --on-success-container-dark: #b8f1c7;
 
-    --error-light: #a82822;
-    --error-dark: #eb8f88;
+    --error-light: #b3261e;
+    --error-dark: #f28b82;
     --on-error-light: #ffffff;
-    --on-error-dark: #4d120f;
-    --error-container-light: #fae7e5;
-    --error-container-dark: #331b1a;
-    --on-error-container-light: #5c1310;
-    --on-error-container-dark: #f7cbc7;
+    --on-error-dark: #601410;
+    --error-container-light: #fce6e4;
+    --error-container-dark: #4c1614;
+    --on-error-container-light: #5c100c;
+    --on-error-container-dark: #fad2cf;
 
-    --warning-light: #805200;
-    --warning-dark: #deb566;
-    --warning-container-light: #fbf1d8;
-    --warning-container-dark: #2e2514;
-    --on-warning-container-light: #422800;
-    --on-warning-container-dark: #f2d9a2;
+    --warning-light: #855000;
+    --warning-dark: #f5bf64;
+    --warning-container-light: #fdf0d5;
+    --warning-container-dark: #3f2b08;
+    --on-warning-container-light: #422600;
+    --on-warning-container-dark: #fce0a6;
 
     /* Tier 2: Semantic Tokens (Fallback for pre-light-dark() browsers) */
     --md-surface: var(--surface-light);
