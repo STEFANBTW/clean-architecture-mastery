@@ -13,15 +13,34 @@
     } catch {}
   </script>
   <title>Clean Architecture Mastery — Interactive Testing Platform</title>
-  <meta name="description" content="Minimalist Material Design 3 interactive assessment platform for Robert C. Martin's Clean Architecture, featuring 30 deep-drilling questions per chapter, Study Mode, Test Mode, live JavaScript sandbox, and Gemini AI evaluation." />
+  <meta name="description" content="Prismatic glassmorphic interactive assessment platform for Robert C. Martin's Clean Architecture, featuring 30 deep-drilling questions per chapter, Study Mode, Test Mode, live JavaScript sandbox, and Gemini AI evaluation." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body>
+<body data-view="home">
+  <!-- Ambient Optical Glass & Caustic Light Background Stage -->
+  <div class="ambient-stage" aria-hidden="true">
+    <div class="ambient-backdrop-image"></div>
+    <div class="ambient-orb orb-cyan"></div>
+    <div class="ambient-orb orb-iris"></div>
+    <div class="ambient-orb orb-champagne"></div>
+    <svg class="ambient-rings" viewBox="0 0 1200 1200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <g class="ring-group-outer">
+        <circle cx="600" cy="600" r="540" stroke="currentColor" stroke-width="1" stroke-dasharray="4 14" opacity="0.55" />
+        <circle cx="600" cy="600" r="420" stroke="currentColor" stroke-width="1" opacity="0.38" />
+      </g>
+      <g class="ring-group-inner">
+        <circle cx="600" cy="600" r="300" stroke="currentColor" stroke-width="1" stroke-dasharray="2 10" opacity="0.5" />
+        <circle cx="600" cy="600" r="185" stroke="currentColor" stroke-width="1" opacity="0.34" />
+      </g>
+    </svg>
+    <div class="ambient-grain"></div>
+  </div>
+
   <div class="page-shell">
-    <!-- State-Aware Sticky Top App Bar -->
+    <!-- State-Aware Floating Frosted-Glass Top App Bar -->
     <header class="top-bar-container" role="banner">
       <div class="top-bar">
         <div class="top-bar-inner">

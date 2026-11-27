@@ -65,6 +65,7 @@
     initStickyHeaderFallback();
     initKeyboardShortcuts();
     initToggletipSystem();
+    initOpticalMotion();
 
     document.getElementById("brand-home-btn").addEventListener("click", () => {
       if (state.view === "home") return;
@@ -80,6 +81,47 @@
     await handleHashRoute();
     window.addEventListener("hashchange", handleHashRoute);
   });
+
+  function initOpticalMotion() {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (!window.matchMedia("(pointer: fine)").matches) return;
+
+    const root = document.documentElement;
+    let targetX = 0;
+    let targetY = 0;
+    let currentX = 0;
+    let currentY = 0;
+    let rafId = null;
+
+    const tick = () => {
+      currentX += (targetX - currentX) * 0.08;
+      currentY += (targetY - currentY) * 0.08;
+      root.style.setProperty("--mx", currentX.toFixed(4));
+      root.style.setProperty("--my", currentY.toFixed(4));
+      if (Math.abs(targetX - currentX) > 0.001 || Math.abs(targetY - currentY) > 0.001) {
+        rafId = requestAnimationFrame(tick);
+      } else {
+        rafId = null;
+      }
+    };
+
+    document.addEventListener(
+      "pointermove",
+      (e) => {
+        targetX = (e.clientX / window.innerWidth) * 2 - 1;
+        targetY = (e.clientY / window.innerHeight) * 2 - 1;
+        if (!rafId) rafId = requestAnimationFrame(tick);
+
+        const card = e.target.closest?.(".chapter-card, .hero-glass-stage, .setup-card, .mode-option");
+        if (card) {
+          const rect = card.getBoundingClientRect();
+          card.style.setProperty("--spot-x", `${((e.clientX - rect.left) / rect.width) * 100}%`);
+          card.style.setProperty("--spot-y", `${((e.clientY - rect.top) / rect.height) * 100}%`);
+        }
+      },
+      { passive: true }
+    );
+  }
 
   function initStickyHeaderFallback() {
     if (window.CSS?.supports?.("container-type", "scroll-state")) return;
@@ -1158,6 +1200,7 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
     const topCenter = document.getElementById("top-bar-center");
     const progressFill = document.getElementById("top-progress-fill");
 
+    document.body.dataset.view = state.view;
     topCenter.replaceChildren();
     progressFill.style.inlineSize = "0%";
 
@@ -1220,7 +1263,7 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
     const totalQuestionsAvailable = tests.reduce((acc, t) => acc + (t.question_count || 30), 0);
 
     const cardsHtml = tests
-      .map((t) => {
+      .map((t, idx) => {
         const h = history[t.chapter];
         const savedSession = getSavedSession(t.chapter);
         const hasInProgress = savedSession && !savedSession.submitted;
@@ -1240,7 +1283,7 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
         );
 
         return `
-          <div class="chapter-card ${isPassed ? "completed" : ""}" role="button" tabindex="0" data-chapter="${t.chapter}" id="chapter-card-${t.chapter}">
+          <div class="chapter-card ${isPassed ? "completed" : ""}" style="--stagger-i:${idx};" role="button" tabindex="0" data-chapter="${t.chapter}" id="chapter-card-${t.chapter}">
             <div class="chapter-card-left">
               <div class="chapter-num">${String(t.chapter).padStart(2, "0")}</div>
               <div class="chapter-meta">
@@ -1265,18 +1308,39 @@ Evaluate the student's understanding strictly but fairly. Return ONLY valid JSON
     const overviewTip = renderInfoTip(
       "tip-home-overview",
       "How the platform works",
-      "Two chapters unlock daily at 7:00 a.m. WAT.\n\nEach test has 30 interactive questions across 11 formats (MCQs with per-option explanations, spot-the-flaw, sequence puzzles, matching, triage buckets, claim audits, live JavaScript labs, and Gemini AI own-words grading)."
+      "Two chapters unlock per study block.\n\nEach test has 30 interactive questions across 11 formats (MCQs with per-option explanations, spot-the-flaw, sequence puzzles, matching, triage buckets, claim audits, live JavaScript labs, and Gemini AI own-words grading)."
     );
 
     container.innerHTML = `
       <section>
         <div class="home-header">
-          <p class="home-eyebrow">Clean Architecture · Robert C. Martin</p>
-          <h1 class="home-title">Daily Mastery</h1>
-          <div class="inline-with-tip">
-            <p class="home-subtitle">2 chapters daily · 30 interactive questions each · JS &amp; AI graded</p>
-            ${overviewTip}
+          <div class="hero-glass-stage">
+            <div class="hero-artwork" aria-hidden="true">
+              <img class="hero-art-img hero-art-light" src="assets/prism-hero-light.jpg" alt="" decoding="async" />
+              <img class="hero-art-img hero-art-dark" src="assets/prism-hero-dark.jpg" alt="" decoding="async" />
+              <div class="hero-scrim"></div>
+            </div>
+
+            <div class="hero-copy">
+              <p class="home-eyebrow">
+                <span class="eyebrow-dot" aria-hidden="true"></span>
+                Clean Architecture · Robert C. Martin
+              </p>
+              <h1 class="home-title">Daily Mastery</h1>
+              <div class="inline-with-tip">
+                <p class="home-subtitle">30 interactive questions per chapter · JS &amp; AI graded</p>
+                ${overviewTip}
+              </div>
+            </div>
+
+            <div class="hero-layer-pills" aria-hidden="true">
+              <span class="layer-pill">Entities</span>
+              <span class="layer-pill">Use Cases</span>
+              <span class="layer-pill">Adapters</span>
+              <span class="layer-pill">Frameworks</span>
+            </div>
           </div>
+
           <div class="home-stats-strip">
             <div class="stat-item">
               <span class="stat-value">${tests.length} / ${state.manifest?.total_book_chapters || 34}</span>
